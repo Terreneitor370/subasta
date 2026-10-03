@@ -1,0 +1,14 @@
+# Configuracion minima del CLI de Supabase (npx supabase link --project-ref <ref>)
+project_id = "subasta"
+
+[functions.notificar-oferta]
+verify_jwt = false
+
+[functions.tick-subastas]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.crear-pago]
+verify_jwt = true
