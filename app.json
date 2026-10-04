@@ -6,6 +6,10 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "platforms": [
+      "android",
+      "ios"
+    ],
     "android": {
       "package": "mx.utslrc.subasta",
       "permissions": [
@@ -13,6 +17,10 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
       ]
+    },
+    "ios": {
+      "bundleIdentifier": "mx.utslrc.subasta",
+      "supportsTablet": false
     },
     "plugins": [
       "expo-router",
@@ -40,9 +48,6 @@
       "eas": {
         "projectId": "REEMPLAZAR_CON_eas_init"
       }
-    },
-    "platforms": [
-      "android"
-    ]
+    }
   }
 }

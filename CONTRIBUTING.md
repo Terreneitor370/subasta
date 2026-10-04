@@ -36,20 +36,20 @@ Ejemplo: `fix(realtime): cerrar canal al salir de la pantalla`.
 2. Cambios a la base de datos solo con una migracion nueva en `supabase/migrations` (`npx supabase migration new <nombre>`), revisada por Jorge (Backend y BD). No modificar tablas desde el dashboard.
 3. Despues de cada migracion: `npm run db:types` y subir `src/types/database.ts`.
 4. No actualizar la version del SDK de Expo durante el proyecto.
-5. Las librerias nativas solo las instalan Isabel o Brayan, con aviso al equipo, porque obligan a regenerar el APK de desarrollo.
+5. Las librerias nativas solo las instalan Isabel o Brayan, con aviso al equipo. Deben ser compatibles con Expo Go para no romper la app en los iPhone.
 6. Antes de abrir el PR: `npm run typecheck`.
 
 ## Equipo y responsables
 
 | Integrante | Dispositivo | Rol | Carpetas y archivos |
 |---|---|---|---|
-| Kassie | Emulador Android | 1 - Frontend | `app/(auth)`, `app/(tabs)`, `src/lib/ui.ts` |
-| Jorge | Emulador Android | 2 - Backend y BD | `supabase/migrations`, `supabase/seed.sql`, `src/types`, `src/features/ofertas` |
-| Jeshua | Emulador Android | 3 - Tiempo real | `src/hooks/useSubastaRealtime.ts`, `useCuentaRegresiva.ts`, `supabase/functions/tick-subastas`, `supabase/cron_tick.sql` |
-| Isabel | Celular Android | 4 - Sensores | `src/hooks/useAgitar.ts`, `useConfirmarInclinacion.ts`, `useUbicacion.ts`, `app/escanear.tsx`, camara en `app/(admin)/nueva.tsx` |
-| Brayan | Celular Android | 5 - Pagos, push y admin | `src/features/creditos`, `src/features/notificaciones`, `app/(admin)`, `supabase/functions/crear-pago`, `stripe-webhook`, `notificar-oferta` |
+| Kassie | iPhone (Expo Go) | 1 - Frontend | `app/(auth)`, `app/(tabs)`, `src/lib/ui.ts` |
+| Jorge | iPhone (Expo Go) | 2 - Backend y BD | `supabase/migrations`, `supabase/seed.sql`, `src/types`, `src/features/ofertas` |
+| Jeshua | iPhone (Expo Go) | 3 - Tiempo real | `src/hooks/useSubastaRealtime.ts`, `useCuentaRegresiva.ts`, `supabase/functions/tick-subastas`, `supabase/cron_tick.sql` |
+| Isabel | Android (development build) | 4 - Sensores | `src/hooks/useAgitar.ts`, `useConfirmarInclinacion.ts`, `useUbicacion.ts`, `app/escanear.tsx`, camara en `app/(admin)/nueva.tsx` |
+| Brayan | Android (development build) | 5 - Pagos, push y admin | `src/features/creditos`, `src/features/notificaciones`, `app/(admin)`, `supabase/functions/crear-pago`, `stripe-webhook`, `notificar-oferta` |
 | Kassie, Jeshua e Isabel | - | Compartido | `app/subasta/[id].tsx` |
 
-Isabel genera y comparte el APK de desarrollo. Brayan genera el APK final de la demo (`eas build --profile preview -p android`) y configura Firebase (FCM) para push con `npx eas credentials`.
+Brayan genera el APK final de la demo (`eas build --profile preview -p android`) y configura Firebase (FCM) para push con `npx eas credentials`.
 
-Cada Pull Request lo revisa otro integrante. Si toca sensores, camara o push, se valida en el celular de Isabel o Brayan antes de aprobarlo.
+Cada Pull Request lo revisa otro integrante. Si toca sensores, camara, push o el diseño, se valida en el celular de Isabel o Brayan antes de aprobarlo. Todo cambio debe seguir abriendo en Expo Go (iPhone).

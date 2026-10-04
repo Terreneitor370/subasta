@@ -1,6 +1,6 @@
 # Subasta
 
-App Android de subastas con creditos, ofertas en tiempo real, pagos, notificaciones push y uso de sensores (camara, GPS, acelerometro y giroscopio).
+App de subastas para Android con creditos, ofertas en tiempo real, pagos, notificaciones push y uso de sensores (camara, GPS, acelerometro y giroscopio).
 
 **Stack:** Expo SDK 57 (React Native + Expo Router + TypeScript) y Supabase (PostgreSQL, Auth, Realtime, Storage, Edge Functions, pg_cron). Pagos con Stripe en modo prueba. Push con Expo Push Service.
 
@@ -9,12 +9,11 @@ El documento de arquitectura completo esta en `docs/Arquitectura_App_Subastas.do
 ## Requisitos
 
 - Node.js 22 LTS y Git
-- Android Studio (SDK y emulador)
 - Acceso al proyecto de Supabase del equipo
-- Isabel y Brayan: celular Android en modo desarrollador
-- Kassie, Jorge y Jeshua: emulador con imagen **Google Play** (API 35 o superior), virtualizacion activada y 8 GB de RAM o mas
+- Isabel y Brayan: celular Android en modo desarrollador y Android Studio (SDK)
+- Kassie, Jorge y Jeshua: iPhone con **Expo Go** actualizado (SDK 57)
 
-La app es **solo para Android** y todo el equipo usa el mismo **development build** (no Expo Go).
+El producto final es **solo para Android**. Los iPhone se usan unicamente para desarrollar con Expo Go.
 
 ## Primeros pasos
 
@@ -26,25 +25,31 @@ cp .env.example .env        # en Windows PowerShell: Copy-Item .env.example .env
 # Completar .env con los valores que comparte Jorge (Backend y BD)
 ```
 
-### Con celular fisico (Isabel y Brayan)
+### iPhone con Expo Go (Kassie, Jorge y Jeshua)
+
+```bash
+npm start            # escanear el QR con la camara del iPhone
+npm run start:tunnel # si la red bloquea la conexion local
+```
+
+### Android con development build (Isabel y Brayan)
 
 ```bash
 npm run android      # la primera vez: compila e instala el development build por USB
 npm start            # en adelante, solo esto
 ```
 
-### Con emulador (Kassie, Jorge y Jeshua)
+En Android las notificaciones push NO funcionan dentro de Expo Go, por eso Isabel y Brayan usan el development build.
 
-1. Abrir el emulador en Android Studio (Device Manager).
-2. Arrastrar a la ventana del emulador el APK de desarrollo que comparte Isabel (`app-debug.apk`).
-3. `npm start` y presionar `a`.
+### APK final para la demo
 
-Sensores en el emulador: Extended controls (boton `...`) > Virtual sensors para acelerometro y giroscopio, y Location para el GPS. La validacion final de sensores y push se hace en los celulares de Isabel o Brayan.
+Brayan ejecuta `eas build --profile preview -p android`.
 
-### APK de desarrollo y APK final
+### Reglas para no romper Expo Go
 
-- **APK de desarrollo:** Isabel ejecuta `npm run android` y comparte `android/app/build/outputs/apk/debug/app-debug.apk`. Se regenera solo cuando cambia algo nativo (librerias nativas, permisos o plugins en `app.json`).
-- **APK final para la demo:** Brayan ejecuta `eas build --profile preview -p android`.
+- Toda libreria nativa nueva debe decir "Expo Go: compatible" en su documentacion.
+- No actualizar el SDK de Expo durante el proyecto.
+- El diseño final se revisa en un Android (Isabel o Brayan).
 
 ## Estructura
 
