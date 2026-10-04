@@ -1,6 +1,6 @@
 # Subasta
 
-App movil de subastas con creditos, ofertas en tiempo real, pagos, notificaciones push y uso de sensores (camara, GPS, acelerometro y giroscopio).
+App Android de subastas con creditos, ofertas en tiempo real, pagos, notificaciones push y uso de sensores (camara, GPS, acelerometro y giroscopio).
 
 **Stack:** Expo SDK 57 (React Native + Expo Router + TypeScript) y Supabase (PostgreSQL, Auth, Realtime, Storage, Edge Functions, pg_cron). Pagos con Stripe en modo prueba. Push con Expo Push Service.
 
@@ -9,9 +9,12 @@ El documento de arquitectura completo esta en `docs/Arquitectura_App_Subastas.do
 ## Requisitos
 
 - Node.js 22 LTS y Git
-- Cuenta en Expo (gratuita) y acceso al proyecto de Supabase del equipo
-- Android: celular en modo desarrollador + Android Studio (SDK) para el development build
-- iOS: app **Expo Go** actualizada (debe soportar SDK 57)
+- Android Studio (SDK y emulador)
+- Acceso al proyecto de Supabase del equipo
+- Isabel y Brayan: celular Android en modo desarrollador
+- Kassie, Jorge y Jeshua: emulador con imagen **Google Play** (API 35 o superior), virtualizacion activada y 8 GB de RAM o mas
+
+La app es **solo para Android** y todo el equipo usa el mismo **development build** (no Expo Go).
 
 ## Primeros pasos
 
@@ -23,21 +26,25 @@ cp .env.example .env        # en Windows PowerShell: Copy-Item .env.example .env
 # Completar .env con los valores que comparte Jorge (Backend y BD)
 ```
 
-### iOS (Expo Go)
+### Con celular fisico (Isabel y Brayan)
 
 ```bash
-npm start            # escanear el QR con la camara del iPhone
-npm run start:tunnel # si la red de la escuela bloquea la conexion local
-```
-
-### Android (development build)
-
-```bash
-npm run android      # compila e instala la app en el celular conectado por USB
+npm run android      # la primera vez: compila e instala el development build por USB
 npm start            # en adelante, solo esto
 ```
 
-En Android las notificaciones push NO funcionan dentro de Expo Go, por eso se usa el development build.
+### Con emulador (Kassie, Jorge y Jeshua)
+
+1. Abrir el emulador en Android Studio (Device Manager).
+2. Arrastrar a la ventana del emulador el APK de desarrollo que comparte Isabel (`app-debug.apk`).
+3. `npm start` y presionar `a`.
+
+Sensores en el emulador: Extended controls (boton `...`) > Virtual sensors para acelerometro y giroscopio, y Location para el GPS. La validacion final de sensores y push se hace en los celulares de Isabel o Brayan.
+
+### APK de desarrollo y APK final
+
+- **APK de desarrollo:** Isabel ejecuta `npm run android` y comparte `android/app/build/outputs/apk/debug/app-debug.apk`. Se regenera solo cuando cambia algo nativo (librerias nativas, permisos o plugins en `app.json`).
+- **APK final para la demo:** Brayan ejecuta `eas build --profile preview -p android`.
 
 ## Estructura
 

@@ -2,8 +2,8 @@
 
 ## Como probarlo
 
-- [ ] Probado en Android (development build)
-- [ ] Probado en iOS (Expo Go)
+- [ ] Probado en emulador o celular Android (development build)
+- [ ] Si toca sensores, camara o push: probado en celular fisico (Isabel o Brayan)
 - [ ] `npm run typecheck` sin errores
 - [ ] Si hay migracion: `npm run db:types` ejecutado
 
