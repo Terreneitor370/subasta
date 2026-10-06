@@ -10,9 +10,12 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "doctor": "npx expo-doctor",
-    "db:types": "npx supabase gen types typescript --linked > src/types/database.ts",
+    "db:types": "npx supabase gen types typescript --linked > src/types/database.gen.ts",
     "db:push": "npx supabase db push",
     "functions:deploy": "npx supabase functions deploy"
+  },
+  "overrides": {
+    "react-dom": "19.2.3"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
