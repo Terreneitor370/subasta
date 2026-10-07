@@ -1,6 +1,7 @@
 // Integrante 4 - Sensor: GIROSCOPIO (confirmar oferta inclinando el telefono)
 import { Gyroscope } from "expo-sensors";
 import { useEffect, useRef, useState } from "react";
+import { Platform } from "react-native";
 
 const ANGULO_CONFIRMAR = 35; // grados de inclinacion hacia el frente
 const INTERVALO_MS = 50;
@@ -18,7 +19,7 @@ export function useConfirmarInclinacion(activo: boolean, onConfirmar: () => void
   cb.current = onConfirmar;
 
   useEffect(() => {
-    if (!activo) return;
+    if (!activo || Platform.OS === "web") return;
     angulo.current = 0;
     setProgreso(0);
     Gyroscope.setUpdateInterval(INTERVALO_MS);

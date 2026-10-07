@@ -1,8 +1,8 @@
-import { StripeProvider } from "@stripe/stripe-react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SesionProvider } from "../src/lib/sesion";
+import { StripeProvider } from "../src/lib/stripe";
 
 const queryClient = new QueryClient();
 

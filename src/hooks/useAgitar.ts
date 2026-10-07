@@ -1,6 +1,7 @@
 // Integrante 4 - Sensor: ACELEROMETRO (oferta rapida al agitar)
 import { Accelerometer } from "expo-sensors";
 import { useEffect, useRef } from "react";
+import { Platform } from "react-native";
 
 const UMBRAL_G = 1.8; // magnitud de aceleracion considerada "agitar"
 const ESPERA_MS = 1500; // evita disparos repetidos
@@ -12,7 +13,7 @@ export function useAgitar(onAgitar: () => void, habilitado = true) {
   cb.current = onAgitar;
 
   useEffect(() => {
-    if (!habilitado) return;
+    if (!habilitado || Platform.OS === "web") return;
     Accelerometer.setUpdateInterval(100);
     const sub = Accelerometer.addListener(({ x, y, z }) => {
       const magnitud = Math.sqrt(x * x + y * y + z * z);
