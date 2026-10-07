@@ -2,8 +2,8 @@
 
 ## Como probarlo
 
-- [ ] Probado en Android (development build)
-- [ ] Probado en iOS (Expo Go)
+- [ ] Probado en celular Android (development build)
+- [ ] Sigue abriendo en Expo Go (iPhone)
 - [ ] `npm run typecheck` sin errores
 - [ ] Si hay migracion: `npm run db:types` ejecutado
 

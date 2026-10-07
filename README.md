@@ -1,6 +1,6 @@
 # Subasta
 
-App movil de subastas con creditos, ofertas en tiempo real, pagos, notificaciones push y uso de sensores (camara, GPS, acelerometro y giroscopio).
+App de subastas para Android con creditos, ofertas en tiempo real, pagos, notificaciones push y uso de sensores (camara, GPS, acelerometro y giroscopio).
 
 **Stack:** Expo SDK 57 (React Native + Expo Router + TypeScript) y Supabase (PostgreSQL, Auth, Realtime, Storage, Edge Functions, pg_cron). Pagos con Stripe en modo prueba. Push con Expo Push Service.
 
@@ -9,9 +9,11 @@ El documento de arquitectura completo esta en `docs/Arquitectura_App_Subastas.do
 ## Requisitos
 
 - Node.js 22 LTS y Git
-- Cuenta en Expo (gratuita) y acceso al proyecto de Supabase del equipo
-- Android: celular en modo desarrollador + Android Studio (SDK) para el development build
-- iOS: app **Expo Go** actualizada (debe soportar SDK 57)
+- Acceso al proyecto de Supabase del equipo
+- Isabel y Brayan: celular Android en modo desarrollador y Android Studio (SDK)
+- Kassie, Jorge y Jeshua: iPhone con **Expo Go** actualizado (SDK 57)
+
+El producto final es **solo para Android**. Los iPhone se usan unicamente para desarrollar con Expo Go.
 
 ## Primeros pasos
 
@@ -20,24 +22,34 @@ git clone https://github.com/Terreneitor370/subasta.git
 cd subasta
 npm install
 cp .env.example .env        # en Windows PowerShell: Copy-Item .env.example .env
-# Completar .env con los valores que comparte el Integrante 2
+# Completar .env con los valores que comparte Jorge (Backend y BD)
 ```
 
-### iOS (Expo Go)
+### iPhone con Expo Go (Kassie, Jorge y Jeshua)
 
 ```bash
 npm start            # escanear el QR con la camara del iPhone
-npm run start:tunnel # si la red de la escuela bloquea la conexion local
+npm run start:tunnel # si la red bloquea la conexion local
 ```
 
-### Android (development build)
+### Android con development build (Isabel y Brayan)
 
 ```bash
-npm run android      # compila e instala la app en el celular conectado por USB
+npm run android      # la primera vez: compila e instala el development build por USB
 npm start            # en adelante, solo esto
 ```
 
-En Android las notificaciones push NO funcionan dentro de Expo Go, por eso se usa el development build.
+En Android las notificaciones push NO funcionan dentro de Expo Go, por eso Isabel y Brayan usan el development build.
+
+### APK final para la demo
+
+Brayan ejecuta `eas build --profile preview -p android`.
+
+### Reglas para no romper Expo Go
+
+- Toda libreria nativa nueva debe decir "Expo Go: compatible" en su documentacion.
+- No actualizar el SDK de Expo durante el proyecto.
+- El diseño final se revisa en un Android (Isabel o Brayan).
 
 ## Estructura
 

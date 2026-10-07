@@ -6,9 +6,19 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "platforms": [
+      "android",
+      "ios",
+      "web"
+    ],
     "android": {
       "package": "mx.utslrc.subasta",
-      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "ios": {
       "bundleIdentifier": "mx.utslrc.subasta",
@@ -18,20 +28,29 @@
       "expo-router",
       [
         "expo-camera",
-        { "cameraPermission": "Se usa la camara para fotografiar productos y escanear codigos QR." }
+        {
+          "cameraPermission": "Se usa la camara para fotografiar productos y escanear codigos QR."
+        }
       ],
       [
         "expo-location",
-        { "locationWhenInUsePermission": "Se usa tu ubicacion para registrar tus ofertas y mostrar subastas cercanas." }
+        {
+          "locationWhenInUsePermission": "Se usa tu ubicacion para registrar tus ofertas y mostrar subastas cercanas."
+        }
       ],
       "expo-notifications",
       [
         "@stripe/stripe-react-native",
-        { "merchantIdentifier": "merchant.mx.utslrc.subasta", "enableGooglePay": false }
+        {
+          "enableGooglePay": false
+        }
       ]
     ],
     "extra": {
-      "eas": { "projectId": "REEMPLAZAR_CON_eas_init" }
-    }
+      "eas": {
+        "projectId": "684a18e8-5e41-4462-9be5-cc113413e43e"
+      }
+    },
+    "owner": "utslrc"
   }
 }
