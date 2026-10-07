@@ -10,6 +10,8 @@ import { useSesion } from "../../src/lib/sesion";
 import { supabase } from "../../src/lib/supabase";
 import { colores, ui } from "../../src/lib/ui";
 
+const DURACION_MAXIMA_MINUTOS = 5 * 24 * 60;
+
 export default function NuevaSubasta() {
   const { usuario } = useSesion();
   const [permiso, pedirPermiso] = useCameraPermissions();
@@ -37,6 +39,12 @@ export default function NuevaSubasta() {
 
   const guardar = async () => {
     if (!nombre || !precio) return Alert.alert("Faltan datos", "Nombre y precio inicial son obligatorios.");
+    const duracionMinutos = Number(minutos);
+
+    if (duracionMinutos > DURACION_MAXIMA_MINUTOS) {
+      return Alert.alert("Duracion invalida", "La duracion maxima permitida es de 5 dias (7200 minutos).");
+    }
+
     setGuardando(true);
     try {
       const imagen_url = foto ? await subirFotoProducto(foto) : null;
@@ -50,7 +58,7 @@ export default function NuevaSubasta() {
         precio_actual: Number(precio),
         incremento_minimo: Number(incremento),
         fecha_inicio: ahora.toISOString(),
-        fecha_fin: new Date(ahora.getTime() + Number(minutos) * 60_000).toISOString(),
+        fecha_fin: new Date(ahora.getTime() + duracionMinutos * 60_000).toISOString(),
         estado: "activa",
         latitud: ubic?.latitud ?? null,
         longitud: ubic?.longitud ?? null,
@@ -108,8 +116,8 @@ export default function NuevaSubasta() {
       <Text style={ui.pista}>De cuanto en cuanto debe subir cada oferta (si es 10, se oferta 100, 110, 120...).</Text>
       <TextInput style={ui.input} placeholder="Ej. 10" placeholderTextColor={colores.gris} keyboardType="number-pad" value={incremento} onChangeText={setIncremento} />
       <Text style={{ fontWeight: "600", marginTop: 6 }}>Duracion (minutos)</Text>
-      <Text style={ui.pista}>Cuanto tiempo aceptara ofertas a partir de publicarse. Ej: 60</Text>
-      <TextInput style={ui.input} placeholder="Ej. 60" placeholderTextColor={colores.gris} keyboardType="number-pad" value={minutos} onChangeText={setMinutos} />
+      <Text style={ui.pista}>Cuanto tiempo aceptara ofertas a partir de publicarse. Maximo: 5 dias (7200 minutos).</Text>
+      <TextInput style={ui.input} placeholder="Ej. 60 (max 7200)" placeholderTextColor={colores.gris} keyboardType="number-pad" value={minutos} onChangeText={setMinutos} />
       <Pressable style={ui.boton} onPress={guardar} disabled={guardando}>
         <Text style={ui.botonTexto}>{guardando ? "Guardando..." : "Publicar subasta"}</Text>
       </Pressable>
