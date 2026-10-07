@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { FlatList, Pressable, Text, View } from "react-native";
-import { distanciaKm, obtenerUbicacion, type Coordenadas } from "../../src/hooks/useUbicacion";
+import { Alert, FlatList, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { distanciaKm, obtenerUbicacion, ubicacionDenegadaPermanente, type Coordenadas } from "../../src/hooks/useUbicacion";
 import { supabase } from "../../src/lib/supabase";
 import { colores, ui } from "../../src/lib/ui";
 
@@ -36,7 +36,20 @@ export default function Subastas() {
   return (
     <View style={ui.pantalla}>
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
-        <Pressable style={[ui.boton, { flex: 1 }]} onPress={async () => setUbicacion(ubicacion ? null : await obtenerUbicacion())}>
+        <Pressable
+          style={[ui.boton, { flex: 1 }]}
+          onPress={async () => {
+            if (ubicacion) return setUbicacion(null);
+            const u = await obtenerUbicacion();
+            if (u) return setUbicacion(u);
+            if (await ubicacionDenegadaPermanente()) {
+              Alert.alert("Permiso de ubicacion desactivado", "Para ver subastas cercanas, activa el permiso de ubicacion en los ajustes del sistema.", [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Abrir ajustes", onPress: () => Linking.openSettings() },
+              ]);
+            }
+          }}
+        >
           <Text style={ui.botonTexto}>{ubicacion ? "Ver todas" : "Cercanas a mi"}</Text>
         </Pressable>
         <Pressable style={[ui.boton, { flex: 1 }]} onPress={() => router.push("/escanear")}>
@@ -52,7 +65,7 @@ export default function Subastas() {
         ListEmptyComponent={<Text style={{ color: colores.gris }}>No hay subastas activas.</Text>}
         renderItem={({ item }) => (
           <Link href={`/subasta/${item.id}`} asChild>
-            <Pressable style={[ui.tarjeta, { flexDirection: "row", gap: 12 }]}>
+            <Pressable style={StyleSheet.flatten([ui.tarjeta, { flexDirection: "row", gap: 12 }])}>
               <Image source={item.imagen_url ?? undefined} style={{ width: 72, height: 72, borderRadius: 8, backgroundColor: colores.borde }} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontWeight: "600" }}>{item.nombre}</Text>

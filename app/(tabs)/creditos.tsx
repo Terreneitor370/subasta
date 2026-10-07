@@ -1,8 +1,8 @@
 // Integrante 5 - Compra de creditos
-import { useStripe } from "@stripe/stripe-react-native";
 import { Alert, Pressable, Text, View } from "react-native";
 import { comprarCreditos, PAQUETES, type Paquete } from "../../src/features/creditos/comprarCreditos";
 import { useSesion } from "../../src/lib/sesion";
+import { useStripe } from "../../src/lib/useStripe";
 import { ui } from "../../src/lib/ui";
 
 export default function Creditos() {

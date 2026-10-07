@@ -13,7 +13,8 @@ export const colores = {
 export const ui = StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: colores.fondo, padding: 16 },
   titulo: { fontSize: 22, fontWeight: "700", color: colores.texto },
-  input: { borderWidth: 1, borderColor: colores.borde, borderRadius: 8, padding: 12, backgroundColor: "#fff" },
+  input: { borderWidth: 1, borderColor: colores.borde, borderRadius: 8, padding: 12, backgroundColor: "#fff", color: colores.texto },
+  pista: { fontSize: 12, color: colores.gris, marginBottom: 4 },
   boton: { backgroundColor: colores.primario, padding: 14, borderRadius: 8, alignItems: "center" },
   botonTexto: { color: "#fff", fontWeight: "600" },
   tarjeta: { backgroundColor: "#fff", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: colores.borde },

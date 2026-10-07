@@ -77,7 +77,7 @@ export default function DetalleSubasta() {
       {activa && (
         <>
           <View style={{ flexDirection: "row", gap: 8 }}>
-            <TextInput style={[ui.input, { flex: 1 }]} keyboardType="number-pad" placeholder={`Minimo ${minimo}`} value={monto} onChangeText={setMonto} />
+            <TextInput style={[ui.input, { flex: 1 }]} keyboardType="number-pad" placeholder={`Minimo ${minimo}`} placeholderTextColor={colores.gris} value={monto} onChangeText={setMonto} />
             <Pressable style={ui.boton} disabled={enviando} onPress={() => enviar(Number(monto || minimo), "normal")}>
               <Text style={ui.botonTexto}>Ofertar</Text>
             </Pressable>
