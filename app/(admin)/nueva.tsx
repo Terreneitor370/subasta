@@ -2,8 +2,8 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useRef, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { subirFotoProducto } from "../../src/features/admin/subirFoto";
 import { obtenerUbicacion } from "../../src/hooks/useUbicacion";
 import { useSesion } from "../../src/lib/sesion";
@@ -22,6 +22,12 @@ export default function NuevaSubasta() {
   const [incremento, setIncremento] = useState("10");
   const [minutos, setMinutos] = useState("60");
   const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    if (mostrarCamara && permiso && !permiso.granted && permiso.canAskAgain) {
+      pedirPermiso();
+    }
+  }, [mostrarCamara, permiso]);
 
   const tomarFoto = async () => {
     const r = await camara.current?.takePictureAsync({ quality: 0.6 });
@@ -61,7 +67,19 @@ export default function NuevaSubasta() {
 
   if (mostrarCamara) {
     if (!permiso?.granted) {
-      pedirPermiso();
+      if (permiso && !permiso.canAskAgain) {
+        return (
+          <View style={[ui.pantalla, { justifyContent: "center", gap: 12 }]}>
+            <Text>Desactivaste el permiso de camara. Actívalo en los ajustes del sistema para tomar la foto.</Text>
+            <Pressable style={ui.boton} onPress={() => Linking.openSettings()}>
+              <Text style={ui.botonTexto}>Abrir ajustes</Text>
+            </Pressable>
+            <Pressable onPress={() => setMostrarCamara(false)}>
+              <Text style={{ color: colores.alerta, textAlign: "center" }}>Cancelar</Text>
+            </Pressable>
+          </View>
+        );
+      }
       return <View />;
     }
     return (

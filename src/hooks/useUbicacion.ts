@@ -16,6 +16,12 @@ export async function obtenerUbicacion(): Promise<Coordenadas | null> {
   return pos ? { latitud: pos.coords.latitude, longitud: pos.coords.longitude } : null;
 }
 
+/** true si el usuario nego el permiso de ubicacion y ya no se le puede volver a pedir (debe ir a Ajustes). */
+export async function ubicacionDenegadaPermanente(): Promise<boolean> {
+  const { status, canAskAgain } = await Location.getForegroundPermissionsAsync();
+  return status === "denied" && !canAskAgain;
+}
+
 /** Distancia en km (Haversine) para ordenar "subastas cercanas". */
 export function distanciaKm(a: Coordenadas, b: Coordenadas) {
   const R = 6371;
