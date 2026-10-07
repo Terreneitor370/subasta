@@ -75,6 +75,12 @@ export const ui = StyleSheet.create({
     textTransform: "uppercase",
     color: colores.primario,
   },
+  pista: {
+    fontFamily: tipografia.interfaz,
+    fontSize: 12,
+    color: colores.gris,
+    marginBottom: 4,
+  },
   input: {
     minHeight: 52,
     borderWidth: 1,

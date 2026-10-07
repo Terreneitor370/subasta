@@ -1,4 +1,4 @@
-import { StripeProvider } from "@stripe/stripe-react-native";
+import { StripeProvider } from "../src/lib/stripe";
 import {
   focusManager,
   QueryClient,

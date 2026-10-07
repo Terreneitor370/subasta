@@ -2,13 +2,13 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useRef, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { subirFotoProducto } from "../../src/features/admin/subirFoto";
 import { obtenerUbicacion } from "../../src/hooks/useUbicacion";
 import { useSesion } from "../../src/lib/sesion";
 import { supabase } from "../../src/lib/supabase";
-import { ui } from "../../src/lib/ui";
+import { colores, ui } from "../../src/lib/ui";
 
 export default function NuevaSubasta() {
   const { usuario } = useSesion();
@@ -22,6 +22,12 @@ export default function NuevaSubasta() {
   const [incremento, setIncremento] = useState("10");
   const [minutos, setMinutos] = useState("60");
   const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    if (mostrarCamara && permiso && !permiso.granted && permiso.canAskAgain) {
+      pedirPermiso();
+    }
+  }, [mostrarCamara, permiso]);
 
   const tomarFoto = async () => {
     const r = await camara.current?.takePictureAsync({ quality: 0.6 });
@@ -61,7 +67,19 @@ export default function NuevaSubasta() {
 
   if (mostrarCamara) {
     if (!permiso?.granted) {
-      pedirPermiso();
+      if (permiso && !permiso.canAskAgain) {
+        return (
+          <View style={[ui.pantalla, { justifyContent: "center", gap: 12 }]}>
+            <Text>Desactivaste el permiso de camara. Actívalo en los ajustes del sistema para tomar la foto.</Text>
+            <Pressable style={ui.boton} onPress={() => Linking.openSettings()}>
+              <Text style={ui.botonTexto}>Abrir ajustes</Text>
+            </Pressable>
+            <Pressable onPress={() => setMostrarCamara(false)}>
+              <Text style={{ color: colores.alerta, textAlign: "center" }}>Cancelar</Text>
+            </Pressable>
+          </View>
+        );
+      }
       return <View />;
     }
     return (
@@ -79,11 +97,19 @@ export default function NuevaSubasta() {
       <Pressable onPress={() => setMostrarCamara(true)} style={[ui.tarjeta, { alignItems: "center" }]}>
         {foto ? <Image source={foto} style={{ width: "100%", height: 180, borderRadius: 8 }} /> : <Text>Tomar foto del producto</Text>}
       </Pressable>
-      <TextInput style={ui.input} placeholder="Nombre" value={nombre} onChangeText={setNombre} />
-      <TextInput style={ui.input} placeholder="Descripcion" value={descripcion} onChangeText={setDescripcion} multiline />
-      <TextInput style={ui.input} placeholder="Precio inicial (creditos)" keyboardType="number-pad" value={precio} onChangeText={setPrecio} />
-      <TextInput style={ui.input} placeholder="Incremento minimo" keyboardType="number-pad" value={incremento} onChangeText={setIncremento} />
-      <TextInput style={ui.input} placeholder="Duracion en minutos" keyboardType="number-pad" value={minutos} onChangeText={setMinutos} />
+      <Text style={{ fontWeight: "600", marginTop: 6 }}>Nombre del producto</Text>
+      <TextInput style={ui.input} placeholder="Ej. Audifonos inalambricos" placeholderTextColor={colores.gris} value={nombre} onChangeText={setNombre} />
+      <Text style={{ fontWeight: "600", marginTop: 6 }}>Descripcion</Text>
+      <TextInput style={ui.input} placeholder="Estado, color, caracteristicas..." placeholderTextColor={colores.gris} value={descripcion} onChangeText={setDescripcion} multiline />
+      <Text style={{ fontWeight: "600", marginTop: 6 }}>Precio inicial (creditos)</Text>
+      <Text style={ui.pista}>Cuanto vale el producto al empezar la subasta. Ej: 100</Text>
+      <TextInput style={ui.input} placeholder="Ej. 100" placeholderTextColor={colores.gris} keyboardType="number-pad" value={precio} onChangeText={setPrecio} />
+      <Text style={{ fontWeight: "600", marginTop: 6 }}>Incremento minimo</Text>
+      <Text style={ui.pista}>De cuanto en cuanto debe subir cada oferta (si es 10, se oferta 100, 110, 120...).</Text>
+      <TextInput style={ui.input} placeholder="Ej. 10" placeholderTextColor={colores.gris} keyboardType="number-pad" value={incremento} onChangeText={setIncremento} />
+      <Text style={{ fontWeight: "600", marginTop: 6 }}>Duracion (minutos)</Text>
+      <Text style={ui.pista}>Cuanto tiempo aceptara ofertas a partir de publicarse. Ej: 60</Text>
+      <TextInput style={ui.input} placeholder="Ej. 60" placeholderTextColor={colores.gris} keyboardType="number-pad" value={minutos} onChangeText={setMinutos} />
       <Pressable style={ui.boton} onPress={guardar} disabled={guardando}>
         <Text style={ui.botonTexto}>{guardando ? "Guardando..." : "Publicar subasta"}</Text>
       </Pressable>

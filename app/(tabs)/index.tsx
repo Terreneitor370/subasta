@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   Alert,
   FlatList,
+  Linking,
   Pressable,
   Text,
   TextInput,
@@ -16,6 +17,7 @@ import { Boton, Estado, Insignia } from "../../src/components/Ui";
 import {
   distanciaKm,
   obtenerUbicacion,
+  ubicacionDenegadaPermanente,
   type Coordenadas,
 } from "../../src/hooks/useUbicacion";
 import { usePerfilActual } from "../../src/components/usePerfilActual";
@@ -67,6 +69,15 @@ export default function Subastas() {
     try {
       const posicion = await obtenerUbicacion();
       if (posicion) setUbicacion(posicion);
+      else if (await ubicacionDenegadaPermanente())
+        Alert.alert(
+          "Permiso de ubicación desactivado",
+          "Para ver subastas cercanas, activa el permiso de ubicación en los ajustes del sistema.",
+          [
+            { text: "Cancelar", style: "cancel" },
+            { text: "Abrir ajustes", onPress: () => Linking.openSettings() },
+          ],
+        );
       else
         Alert.alert(
           "Ubicación no disponible",

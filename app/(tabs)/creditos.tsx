@@ -1,6 +1,6 @@
 import { Encabezado } from "../../src/components/Editorial";
 import { useActualizarPantalla } from "../../src/components/useActualizarPantalla";
-import { useStripe } from "@stripe/stripe-react-native";
+import { useStripe } from "../../src/lib/useStripe";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Alert, RefreshControl, ScrollView, Text, View } from "react-native";

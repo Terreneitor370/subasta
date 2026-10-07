@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "333537820095",
+    "project_id": "subasta-e5580",
+    "storage_bucket": "subasta-e5580.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:333537820095:android:2789bd1811c17a9b72750a",
+        "android_client_info": {
+          "package_name": "mx.utslrc.subasta"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAL9Ftel4m4My-9kytOTEsEPbRV9qXTRIA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
