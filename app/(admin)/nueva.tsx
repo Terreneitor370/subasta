@@ -8,7 +8,7 @@ import { subirFotoProducto } from "../../src/features/admin/subirFoto";
 import { obtenerUbicacion } from "../../src/hooks/useUbicacion";
 import { useSesion } from "../../src/lib/sesion";
 import { supabase } from "../../src/lib/supabase";
-import { ui } from "../../src/lib/ui";
+import { colores, ui } from "../../src/lib/ui";
 
 export default function NuevaSubasta() {
   const { usuario } = useSesion();
@@ -79,11 +79,11 @@ export default function NuevaSubasta() {
       <Pressable onPress={() => setMostrarCamara(true)} style={[ui.tarjeta, { alignItems: "center" }]}>
         {foto ? <Image source={foto} style={{ width: "100%", height: 180, borderRadius: 8 }} /> : <Text>Tomar foto del producto</Text>}
       </Pressable>
-      <TextInput style={ui.input} placeholder="Nombre" value={nombre} onChangeText={setNombre} />
-      <TextInput style={ui.input} placeholder="Descripcion" value={descripcion} onChangeText={setDescripcion} multiline />
-      <TextInput style={ui.input} placeholder="Precio inicial (creditos)" keyboardType="number-pad" value={precio} onChangeText={setPrecio} />
-      <TextInput style={ui.input} placeholder="Incremento minimo" keyboardType="number-pad" value={incremento} onChangeText={setIncremento} />
-      <TextInput style={ui.input} placeholder="Duracion en minutos" keyboardType="number-pad" value={minutos} onChangeText={setMinutos} />
+      <TextInput style={ui.input} placeholder="Nombre" placeholderTextColor={colores.gris} value={nombre} onChangeText={setNombre} />
+      <TextInput style={ui.input} placeholder="Descripcion" placeholderTextColor={colores.gris} value={descripcion} onChangeText={setDescripcion} multiline />
+      <TextInput style={ui.input} placeholder="Precio inicial (creditos)" placeholderTextColor={colores.gris} keyboardType="number-pad" value={precio} onChangeText={setPrecio} />
+      <TextInput style={ui.input} placeholder="Incremento minimo" placeholderTextColor={colores.gris} keyboardType="number-pad" value={incremento} onChangeText={setIncremento} />
+      <TextInput style={ui.input} placeholder="Duracion en minutos" placeholderTextColor={colores.gris} keyboardType="number-pad" value={minutos} onChangeText={setMinutos} />
       <Pressable style={ui.boton} onPress={guardar} disabled={guardando}>
         <Text style={ui.botonTexto}>{guardando ? "Guardando..." : "Publicar subasta"}</Text>
       </Pressable>
