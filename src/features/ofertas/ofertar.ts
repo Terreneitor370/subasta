@@ -8,8 +8,8 @@ export async function ofertar(productoId: string, monto: number, metodo: MetodoO
   const { data, error } = await supabase.rpc("realizar_oferta", {
     p_producto_id: productoId,
     p_monto: monto,
-    p_latitud: ubicacion?.latitud ?? null,
-    p_longitud: ubicacion?.longitud ?? null,
+    p_latitud: ubicacion?.latitud ?? undefined,
+    p_longitud: ubicacion?.longitud ?? undefined,
     p_metodo: metodo,
   });
   if (error) throw new Error(traducirError(error.message));
