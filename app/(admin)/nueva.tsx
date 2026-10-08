@@ -3,12 +3,22 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useRef, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { subirFotoProducto } from "../../src/features/admin/subirFoto";
 import { obtenerUbicacion } from "../../src/hooks/useUbicacion";
 import { useSesion } from "../../src/lib/sesion";
 import { supabase } from "../../src/lib/supabase";
-import { ui } from "../../src/lib/ui";
+import { colores, ui } from "../../src/lib/ui";
 
 export default function NuevaSubasta() {
   const { usuario } = useSesion();
@@ -30,7 +40,11 @@ export default function NuevaSubasta() {
   };
 
   const guardar = async () => {
-    if (!nombre || !precio) return Alert.alert("Faltan datos", "Nombre y precio inicial son obligatorios.");
+    if (!nombre || !precio)
+      return Alert.alert(
+        "Faltan datos",
+        "Nombre y precio inicial son obligatorios.",
+      );
     setGuardando(true);
     try {
       const imagen_url = foto ? await subirFotoProducto(foto) : null;
@@ -44,7 +58,9 @@ export default function NuevaSubasta() {
         precio_actual: Number(precio),
         incremento_minimo: Number(incremento),
         fecha_inicio: ahora.toISOString(),
-        fecha_fin: new Date(ahora.getTime() + Number(minutos) * 60_000).toISOString(),
+        fecha_fin: new Date(
+          ahora.getTime() + Number(minutos) * 60_000,
+        ).toISOString(),
         estado: "activa",
         latitud: ubic?.latitud ?? null,
         longitud: ubic?.longitud ?? null,
@@ -75,26 +91,111 @@ export default function NuevaSubasta() {
   }
 
   return (
-    <ScrollView contentContainerStyle={[ui.pantalla, { gap: 10 }]}>
-      <Pressable onPress={() => setMostrarCamara(true)} style={[ui.tarjeta, { alignItems: "center" }]}>
-        {foto ? <Image source={foto} style={{ width: "100%", height: 180, borderRadius: 8 }} /> : <Text>Tomar foto del producto</Text>}
-      </Pressable>
-      <Text style={{ fontWeight: "600", marginTop: 6 }}>Nombre del producto</Text>
-      <TextInput style={ui.input} placeholder="Ej. Audifonos inalambricos" value={nombre} onChangeText={setNombre} />
-      <Text style={{ fontWeight: "600", marginTop: 6 }}>Descripcion</Text>
-      <TextInput style={ui.input} placeholder="Estado, color, caracteristicas..." value={descripcion} onChangeText={setDescripcion} multiline />
-      <Text style={{ fontWeight: "600", marginTop: 6 }}>Precio inicial (creditos)</Text>
-      <Text style={ui.pista}>Cuanto vale el producto al empezar la subasta. Ej: 100</Text>
-      <TextInput style={ui.input} placeholder="Ej. 100" keyboardType="number-pad" value={precio} onChangeText={setPrecio} />
-      <Text style={{ fontWeight: "600", marginTop: 6 }}>Incremento minimo</Text>
-      <Text style={ui.pista}>De cuanto en cuanto debe subir cada oferta (si es 10, se oferta 100, 110, 120...).</Text>
-      <TextInput style={ui.input} placeholder="Ej. 10" keyboardType="number-pad" value={incremento} onChangeText={setIncremento} />
-      <Text style={{ fontWeight: "600", marginTop: 6 }}>Duracion (minutos)</Text>
-      <Text style={ui.pista}>Cuanto tiempo aceptara ofertas a partir de publicarse. Ej: 60</Text>
-      <TextInput style={ui.input} placeholder="Ej. 60" keyboardType="number-pad" value={minutos} onChangeText={setMinutos} />
-      <Pressable style={ui.boton} onPress={guardar} disabled={guardando}>
-        <Text style={ui.botonTexto}>{guardando ? "Guardando..." : "Publicar subasta"}</Text>
-      </Pressable>
-    </ScrollView>
+    <SafeAreaView
+      edges={["bottom"]}
+      style={{ flex: 1, backgroundColor: colores.fondo }}
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 10 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          <Pressable
+            onPress={() => setMostrarCamara(true)}
+            style={[ui.tarjeta, { alignItems: "center" }]}
+          >
+            {foto ? (
+              <Image
+                source={foto}
+                style={{ width: "100%", height: 180, borderRadius: 8 }}
+              />
+            ) : (
+              <Text>Tomar foto del producto</Text>
+            )}
+          </Pressable>
+          <Text style={{ fontWeight: "600", marginTop: 6 }}>
+            Nombre del producto
+          </Text>
+          <TextInput
+            style={ui.input}
+            placeholder="Ej. Audifonos inalambricos"
+            value={nombre}
+            onChangeText={setNombre}
+          />
+          <Text style={{ fontWeight: "600", marginTop: 6 }}>Descripcion</Text>
+          <TextInput
+            style={ui.input}
+            placeholder="Estado, color, caracteristicas..."
+            value={descripcion}
+            onChangeText={setDescripcion}
+            multiline
+          />
+          <Text style={{ fontWeight: "600", marginTop: 6 }}>
+            Precio inicial (creditos)
+          </Text>
+          <Text style={ui.pista}>
+            Cuanto vale el producto al empezar la subasta. Ej: 100
+          </Text>
+          <TextInput
+            style={ui.input}
+            placeholder="Ej. 100"
+            keyboardType="number-pad"
+            value={precio}
+            onChangeText={setPrecio}
+          />
+          <Text style={{ fontWeight: "600", marginTop: 6 }}>
+            Incremento minimo
+          </Text>
+          <Text style={ui.pista}>
+            De cuanto en cuanto debe subir cada oferta (si es 10, se oferta 100,
+            110, 120...).
+          </Text>
+          <TextInput
+            style={ui.input}
+            placeholder="Ej. 10"
+            keyboardType="number-pad"
+            value={incremento}
+            onChangeText={setIncremento}
+          />
+          <Text style={{ fontWeight: "600", marginTop: 6 }}>
+            Duracion (minutos)
+          </Text>
+          <Text style={ui.pista}>
+            Cuanto tiempo aceptara ofertas a partir de publicarse. Ej: 60
+          </Text>
+          <TextInput
+            style={ui.input}
+            placeholder="Ej. 60"
+            keyboardType="number-pad"
+            value={minutos}
+            onChangeText={setMinutos}
+          />
+        </ScrollView>
+        <View
+          style={{
+            padding: 16,
+            borderTopWidth: 1,
+            borderTopColor: colores.borde,
+          }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: guardando, busy: guardando }}
+            style={ui.boton}
+            onPress={guardar}
+            disabled={guardando}
+          >
+            <Text style={ui.botonTexto}>
+              {guardando ? "Guardando..." : "Publicar subasta"}
+            </Text>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
