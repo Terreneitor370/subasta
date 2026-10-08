@@ -1,220 +1,71 @@
-import { Encabezado, ImagenProducto } from "../../src/components/Editorial";
-import { useActualizarPantalla } from "../../src/components/useActualizarPantalla";
+// Integrante 1 (UI) + Integrante 4 (GPS: subastas cercanas, camara: QR)
 import { useQuery } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { Image } from "expo-image";
+import { Link, router } from "expo-router";
 import { useState } from "react";
-import {
-  Alert,
-  FlatList,
-  Linking,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Boton, Estado, Insignia } from "../../src/components/Ui";
-import {
-  distanciaKm,
-  obtenerUbicacion,
-  ubicacionDenegadaPermanente,
-  type Coordenadas,
-} from "../../src/hooks/useUbicacion";
-import { usePerfilActual } from "../../src/components/usePerfilActual";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { distanciaKm, obtenerUbicacion, type Coordenadas } from "../../src/hooks/useUbicacion";
 import { supabase } from "../../src/lib/supabase";
-import {
-  colores,
-  etiquetasEstado,
-  fecha,
-  mensajeError,
-  numero,
-  ui,
-} from "../../src/lib/ui";
+import { colores, ui } from "../../src/lib/ui";
+
 export default function Subastas() {
-  const { usuario } = usePerfilActual();
   const [ubicacion, setUbicacion] = useState<Coordenadas | null>(null);
-  const [localizando, setLocalizando] = useState(false);
-  const [busqueda, setBusqueda] = useState("");
-  const [estado, setEstado] = useState<"activa" | "programada">("activa");
-  const consulta = useQuery({
-    queryKey: ["subastas", estado],
+
+  const { data = [], refetch, isFetching } = useQuery({
+    queryKey: ["subastas", "activas"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("productos")
         .select("*")
-        .eq("estado", estado)
+        .eq("estado", "activa")
         .order("fecha_fin", { ascending: true });
       if (error) throw error;
       return data;
     },
   });
-  useActualizarPantalla(consulta.refetch);
-  const lista = (consulta.data ?? [])
-    .filter((p) =>
-      p.nombre
-        .toLocaleLowerCase()
-        .includes(busqueda.trim().toLocaleLowerCase()),
-    )
-    .map((p) => ({
-      ...p,
-      km:
-        ubicacion && p.latitud != null && p.longitud != null
-          ? distanciaKm(ubicacion, { latitud: p.latitud, longitud: p.longitud })
-          : null,
-    }));
-  if (ubicacion) lista.sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity));
-  const cercanas = async () => {
-    if (ubicacion) return setUbicacion(null);
-    setLocalizando(true);
-    try {
-      const posicion = await obtenerUbicacion();
-      if (posicion) setUbicacion(posicion);
-      else if (await ubicacionDenegadaPermanente())
-        Alert.alert(
-          "Permiso de ubicación desactivado",
-          "Para ver subastas cercanas, activa el permiso de ubicación en los ajustes del sistema.",
-          [
-            { text: "Cancelar", style: "cancel" },
-            { text: "Abrir ajustes", onPress: () => Linking.openSettings() },
-          ],
-        );
-      else
-        Alert.alert(
-          "Ubicación no disponible",
-          "Activa el permiso de ubicación para ordenar por distancia. Puedes seguir viendo todas las subastas.",
-        );
-    } catch {
-      Alert.alert(
-        "No pudimos obtener tu ubicación",
-        "Inténtalo de nuevo o explora todas las subastas.",
-      );
-    } finally {
-      setLocalizando(false);
-    }
-  };
+
+  const lista = ubicacion
+    ? [...data]
+        .map((p) => ({
+          ...p,
+          km: p.latitud != null && p.longitud != null ? distanciaKm(ubicacion, { latitud: p.latitud, longitud: p.longitud }) : null,
+        }))
+        .sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9))
+    : data.map((p) => ({ ...p, km: null as number | null }));
+
   return (
-    <SafeAreaView edges={["bottom"]} style={ui.pantalla}>
+    <View style={ui.pantalla}>
+      <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+        <Pressable style={[ui.boton, { flex: 1 }]} onPress={async () => setUbicacion(ubicacion ? null : await obtenerUbicacion())}>
+          <Text style={ui.botonTexto}>{ubicacion ? "Ver todas" : "Cercanas a mi"}</Text>
+        </Pressable>
+        <Pressable style={[ui.boton, { flex: 1 }]} onPress={() => router.push("/escanear")}>
+          <Text style={ui.botonTexto}>Escanear QR</Text>
+        </Pressable>
+      </View>
       <FlatList
-        data={consulta.isError ? [] : lista}
+        data={lista}
         keyExtractor={(p) => p.id}
-        onRefresh={() => {
-          void consulta.refetch();
-        }}
-        refreshing={consulta.isRefetching}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={ui.contenido}
-        ListHeaderComponent={
-          <View style={{ gap: 16, paddingBottom: 16 }}>
-            <Text style={ui.secundario}>
-              Bienvenido, {usuario?.nombre?.trim().split(" ")[0] || "visitante"}
-            </Text>
-            <Encabezado
-              ceja="EL CATÁLOGO"
-              titulo="Encuentra tu próxima pieza."
-              detalle="Explora los productos disponibles y participa en sus subastas."
-            />
-            <TextInput
-              accessibilityLabel="Buscar subastas por nombre"
-              style={ui.input}
-              placeholder="Buscar un producto…"
-              placeholderTextColor={colores.gris}
-              value={busqueda}
-              onChangeText={setBusqueda}
-              clearButtonMode="while-editing"
-            />
-            <View style={ui.fila}>
-              <View style={{ flex: 1 }}>
-                <Boton
-                  titulo={ubicacion ? "Ver todas" : "Cercanas a mí"}
-                  secundario
-                  cargando={localizando}
-                  onPress={cercanas}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Boton
-                  titulo="Escanear QR"
-                  secundario
-                  onPress={() => router.push("/escanear")}
-                />
-              </View>
-            </View>
-            <View style={ui.fila}>
-              {(["activa", "programada"] as const).map((e) => (
-                <Pressable
-                  key={e}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: estado === e }}
-                  onPress={() => setEstado(e)}
-                  style={[ui.chip, estado === e && ui.chipActivo]}
-                >
-                  <Text style={ui.etiqueta}>
-                    {e === "activa" ? "En vivo" : "Próximamente"}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-            <Text style={ui.secundario}>
-              {ubicacion
-                ? "Ordenadas por cercanía · sin ubicación al final"
-                : "Ordenadas por fecha de cierre"}{" "}
-              · {lista.length} resultados
-            </Text>
-          </View>
-        }
-        ListEmptyComponent={
-          consulta.isPending ? (
-            <Estado titulo="Buscando subastas…" cargando />
-          ) : consulta.isError ? (
-            <Estado
-              titulo="No pudimos cargar las subastas"
-              detalle={mensajeError(consulta.error)}
-              accion="Reintentar"
-              onPress={() => {
-                void consulta.refetch();
-              }}
-            />
-          ) : (
-            <Estado
-              titulo={
-                busqueda ? "Sin coincidencias" : "No hay subastas por ahora"
-              }
-              detalle={
-                busqueda
-                  ? "Prueba con otro nombre o borra la búsqueda."
-                  : "Vuelve más tarde para descubrir nuevos productos."
-              }
-            />
-          )
-        }
+        onRefresh={refetch}
+        refreshing={isFetching}
+        contentContainerStyle={{ gap: 10 }}
+        ListEmptyComponent={<Text style={{ color: colores.gris }}>No hay subastas activas.</Text>}
         renderItem={({ item }) => (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Ver ${item.nombre}, ${item.precio_actual} créditos`}
-            style={({ pressed }) => [ui.tarjeta, pressed && ui.deshabilitado]}
-            onPress={() => router.push(`/subasta/${item.id}`)}
-          >
-            <ImagenProducto
-              uri={item.imagen_url}
-              nombre={item.nombre}
-              alto={190}
-            />
-            <Insignia texto={etiquetasEstado[item.estado]} />
-            <Text style={ui.subtitulo}>{item.nombre}</Text>
-            <Text style={ui.cifra}>
-              {numero(item.precio_actual)}{" "}
-              <Text style={ui.secundario}>créditos</Text>
-            </Text>
-            <Text style={ui.secundario}>
-              {item.estado === "programada"
-                ? `Inicia ${fecha(item.fecha_inicio)}`
-                : `Cierra ${fecha(item.fecha_fin)}`}
-              {item.km != null ? ` · ${item.km.toFixed(1)} km` : ""}
-            </Text>
-            <Text style={ui.enlace}>Ver subasta →</Text>
-          </Pressable>
+          <Link href={`/subasta/${item.id}`} asChild>
+            <Pressable style={StyleSheet.flatten([ui.tarjeta, { flexDirection: "row", gap: 12 }])}>
+              <Image source={item.imagen_url ?? undefined} style={{ width: 72, height: 72, borderRadius: 8, backgroundColor: colores.borde }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: "600" }}>{item.nombre}</Text>
+                <Text>{item.precio_actual} creditos</Text>
+                <Text style={{ color: colores.gris }}>
+                  Termina: {new Date(item.fecha_fin).toLocaleString()}
+                  {item.km != null ? `  -  ${item.km.toFixed(1)} km` : ""}
+                </Text>
+              </View>
+            </Pressable>
+          </Link>
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 }

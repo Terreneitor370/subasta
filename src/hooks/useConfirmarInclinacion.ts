@@ -15,22 +15,17 @@ const INTERVALO_MS = 50;
 export function useConfirmarInclinacion(activo: boolean, onConfirmar: () => void) {
   const [progreso, setProgreso] = useState(0);
   const angulo = useRef(0);
-  const ultimo = useRef(0);
   const cb = useRef(onConfirmar);
   cb.current = onConfirmar;
 
   useEffect(() => {
     if (!activo || Platform.OS === "web") return;
     angulo.current = 0;
-    ultimo.current = Date.now();
     setProgreso(0);
     Gyroscope.setUpdateInterval(INTERVALO_MS);
     let confirmado = false;
     const sub = Gyroscope.addListener(({ x }) => {
-      const ahora = Date.now();
-      const dt = (ahora - ultimo.current) / 1000;
-      ultimo.current = ahora;
-      angulo.current += x * dt;
+      angulo.current += (x * INTERVALO_MS) / 1000;
       const grados = Math.abs((angulo.current * 180) / Math.PI);
       setProgreso(Math.min(1, grados / ANGULO_CONFIRMAR));
       if (!confirmado && grados >= ANGULO_CONFIRMAR) {

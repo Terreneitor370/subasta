@@ -2,9 +2,8 @@
 // "subasta://subasta/<id>" o solo el <id> del producto.
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
-import * as Haptics from "expo-haptics";
 import { useRef } from "react";
-import { Linking, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { ui } from "../src/lib/ui";
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
@@ -15,16 +14,6 @@ export default function Escanear() {
 
   if (!permiso) return <View />;
   if (!permiso.granted) {
-    if (!permiso.canAskAgain) {
-      return (
-        <View style={[ui.pantalla, { justifyContent: "center", gap: 12 }]}>
-          <Text>Desactivaste el permiso de camara. Actívalo en los ajustes del sistema para escanear codigos QR.</Text>
-          <Pressable style={ui.boton} onPress={() => Linking.openSettings()}>
-            <Text style={ui.botonTexto}>Abrir ajustes</Text>
-          </Pressable>
-        </View>
-      );
-    }
     return (
       <View style={[ui.pantalla, { justifyContent: "center", gap: 12 }]}>
         <Text>Necesitamos acceso a la camara para escanear el codigo.</Text>
@@ -44,7 +33,6 @@ export default function Escanear() {
         const id = data.match(UUID)?.[0];
         if (!id || leido.current) return;
         leido.current = true;
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.replace(`/subasta/${id}`);
       }}
     />

@@ -1,177 +1,44 @@
-import { Encabezado } from "../../src/components/Editorial";
-import { useActualizarPantalla } from "../../src/components/useActualizarPantalla";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+// Integrante 1 / 5 - Perfil, bandeja de notificaciones y acceso al panel admin
+import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useRef, useState } from "react";
-import { Alert, FlatList, Pressable, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Boton, Estado, Insignia } from "../../src/components/Ui";
-import { usePerfilActual } from "../../src/components/usePerfilActual";
+import { FlatList, Pressable, Text, View } from "react-native";
+import { useSesion } from "../../src/lib/sesion";
 import { supabase } from "../../src/lib/supabase";
-import { colores, fecha, mensajeError, ui } from "../../src/lib/ui";
-import type { Notificacion } from "../../src/types/database";
+import { colores, ui } from "../../src/lib/ui";
+
 export default function Perfil() {
-  const { usuario, session } = usePerfilActual();
-  const client = useQueryClient();
-  const [saliendo, setSaliendo] = useState(false);
-  const ocupado = useRef(false);
-  const consulta = useQuery({
-    queryKey: ["notificaciones", session?.user.id],
-    enabled: !!session,
-    refetchInterval: 30000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("notificaciones")
-        .select("*")
-        .eq("usuario_id", session!.user.id)
-        .order("fecha", { ascending: false })
-        .limit(30);
-      if (error) throw error;
-      return data;
-    },
+  const { usuario } = useSesion();
+  const { data: notificaciones = [] } = useQuery({
+    queryKey: ["notificaciones", usuario?.id],
+    enabled: !!usuario,
+    queryFn: async () =>
+      (await supabase.from("notificaciones").select("*").order("fecha", { ascending: false }).limit(30)).data ?? [],
   });
-  useActualizarPantalla(consulta.refetch, !!session);
-  const salir = async () => {
-    if (ocupado.current) return;
-    ocupado.current = true;
-    setSaliendo(true);
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      client.clear();
-      router.replace("/(auth)/login");
-    } catch (e) {
-      Alert.alert("No pudimos cerrar sesión", mensajeError(e));
-    } finally {
-      ocupado.current = false;
-      setSaliendo(false);
-    }
-  };
-  const abrir = async (n: Notificacion) => {
-    if (!n.leida) {
-      const { error } = await supabase
-        .from("notificaciones")
-        .update({ leida: true })
-        .eq("id", n.id)
-        .eq("usuario_id", session!.user.id);
-      if (error)
-        Alert.alert(
-          "Aviso",
-          "No pudimos marcar el aviso como leído. Puedes consultar la subasta.",
-        );
-      else void consulta.refetch();
-    }
-    if (n.producto_id) router.push(`/subasta/${n.producto_id}`);
-  };
+
   return (
-    <SafeAreaView edges={["bottom"]} style={ui.pantalla}>
+    <View style={[ui.pantalla, { gap: 12 }]}>
+      <Text style={ui.titulo}>{usuario?.nombre}</Text>
+      <Text style={{ color: colores.gris }}>{usuario?.correo}</Text>
+      {usuario?.rol === "admin" && (
+        <Pressable style={ui.boton} onPress={() => router.push("/(admin)")}>
+          <Text style={ui.botonTexto}>Panel de administrador</Text>
+        </Pressable>
+      )}
+      <Text style={{ fontWeight: "600", marginTop: 8 }}>Notificaciones</Text>
       <FlatList
-        data={consulta.isError ? [] : (consulta.data ?? [])}
+        data={notificaciones}
         keyExtractor={(n) => n.id}
-        contentContainerStyle={ui.contenido}
-        onRefresh={() => {
-          void consulta.refetch();
-        }}
-        refreshing={consulta.isRefetching}
-        ListHeaderComponent={
-          <View style={{ gap: 16, paddingBottom: 16 }}>
-            <Encabezado ceja="ÁREA PERSONAL" titulo="Mi perfil." />
-            <View style={ui.hero}>
-              <View
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 6,
-                  backgroundColor: colores.suave,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={ui.titulo}>
-                  {usuario?.nombre?.trim().charAt(0).toUpperCase() ?? "●"}
-                </Text>
-              </View>
-              <Text style={ui.heroTitulo}>
-                {usuario?.nombre ?? "Mi perfil"}
-              </Text>
-              <Text style={ui.heroTexto}>
-                {usuario?.correo ?? session?.user.email}
-              </Text>
-            </View>
-            {usuario?.rol === "admin" && (
-              <Boton
-                titulo="Panel de administrador"
-                secundario
-                onPress={() => router.push("/(admin)")}
-              />
-            )}
-            <Boton
-              titulo="Cerrar sesión"
-              secundario
-              cargando={saliendo}
-              onPress={() =>
-                Alert.alert(
-                  "Cerrar sesión",
-                  "¿Quieres salir de tu cuenta en este dispositivo?",
-                  [
-                    { text: "Cancelar", style: "cancel" },
-                    {
-                      text: "Cerrar sesión",
-                      style: "destructive",
-                      onPress: () => {
-                        void salir();
-                      },
-                    },
-                  ],
-                )
-              }
-            />
-            <Text style={ui.subtitulo}>Tus avisos</Text>
-            <Text style={ui.secundario}>
-              Ofertas superadas, cierres y resultados. Toca un aviso para abrir
-              su subasta.
-            </Text>
-          </View>
-        }
-        ListEmptyComponent={
-          consulta.isPending ? (
-            <Estado titulo="Cargando avisos…" cargando />
-          ) : consulta.isError ? (
-            <Estado
-              titulo="No pudimos cargar tus avisos"
-              detalle={mensajeError(consulta.error)}
-              accion="Reintentar"
-              onPress={() => {
-                void consulta.refetch();
-              }}
-            />
-          ) : (
-            <Estado
-              titulo="Estás al día"
-              detalle="Tus avisos aparecerán aquí cuando participes en subastas."
-            />
-          )
-        }
+        contentContainerStyle={{ gap: 6 }}
         renderItem={({ item }) => (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${item.leida ? "" : "Sin leer. "}${item.titulo}`}
-            style={[
-              ui.tarjeta,
-              !item.leida && { borderColor: colores.primario },
-            ]}
-            onPress={() => {
-              void abrir(item);
-            }}
-          >
-            {!item.leida && <Insignia texto="Sin leer" />}
-            <Text style={ui.subtitulo}>{item.titulo}</Text>
-            <Text style={ui.texto}>{item.cuerpo}</Text>
-            <Text style={ui.secundario}>{fecha(item.fecha)}</Text>
-            {item.producto_id && <Text style={ui.enlace}>Ver subasta →</Text>}
-          </Pressable>
+          <View style={ui.tarjeta}>
+            <Text style={{ fontWeight: "600" }}>{item.titulo}</Text>
+            <Text>{item.cuerpo}</Text>
+          </View>
         )}
       />
-    </SafeAreaView>
+      <Pressable onPress={() => supabase.auth.signOut().then(() => router.replace("/(auth)/login"))}>
+        <Text style={{ color: colores.alerta, textAlign: "center" }}>Cerrar sesion</Text>
+      </Pressable>
+    </View>
   );
 }
