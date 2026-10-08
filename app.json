@@ -17,7 +17,8 @@
         "CAMERA",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
-      ]
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "ios": {
       "bundleIdentifier": "mx.utslrc.subasta",
@@ -47,8 +48,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "REEMPLAZAR_CON_eas_init"
+        "projectId": "684a18e8-5e41-4462-9be5-cc113413e43e"
       }
-    }
+    },
+    "owner": "utslrc"
   }
 }
