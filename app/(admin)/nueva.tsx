@@ -2,10 +2,11 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -20,6 +21,8 @@ import { useSesion } from "../../src/lib/sesion";
 import { supabase } from "../../src/lib/supabase";
 import { colores, ui } from "../../src/lib/ui";
 
+const DURACION_MAXIMA_MINUTOS = 5 * 24 * 60;
+
 export default function NuevaSubasta() {
   const { usuario } = useSesion();
   const [permiso, pedirPermiso] = useCameraPermissions();
@@ -33,6 +36,12 @@ export default function NuevaSubasta() {
   const [minutos, setMinutos] = useState("60");
   const [guardando, setGuardando] = useState(false);
 
+  useEffect(() => {
+    if (mostrarCamara && permiso && !permiso.granted && permiso.canAskAgain) {
+      pedirPermiso();
+    }
+  }, [mostrarCamara, permiso]);
+
   const tomarFoto = async () => {
     const r = await camara.current?.takePictureAsync({ quality: 0.6 });
     if (r) setFoto(r.uri);
@@ -45,6 +54,15 @@ export default function NuevaSubasta() {
         "Faltan datos",
         "Nombre y precio inicial son obligatorios.",
       );
+    const duracionMinutos = Number(minutos);
+
+    if (duracionMinutos > DURACION_MAXIMA_MINUTOS) {
+      return Alert.alert(
+        "Duracion invalida",
+        "La duracion maxima permitida es de 5 dias (7200 minutos).",
+      );
+    }
+
     setGuardando(true);
     try {
       const imagen_url = foto ? await subirFotoProducto(foto) : null;
@@ -59,7 +77,7 @@ export default function NuevaSubasta() {
         incremento_minimo: Number(incremento),
         fecha_inicio: ahora.toISOString(),
         fecha_fin: new Date(
-          ahora.getTime() + Number(minutos) * 60_000,
+          ahora.getTime() + duracionMinutos * 60_000,
         ).toISOString(),
         estado: "activa",
         latitud: ubic?.latitud ?? null,
@@ -77,7 +95,24 @@ export default function NuevaSubasta() {
 
   if (mostrarCamara) {
     if (!permiso?.granted) {
-      pedirPermiso();
+      if (permiso && !permiso.canAskAgain) {
+        return (
+          <View style={[ui.pantalla, { justifyContent: "center", gap: 12 }]}>
+            <Text>
+              Desactivaste el permiso de camara. Actívalo en los ajustes del
+              sistema para tomar la foto.
+            </Text>
+            <Pressable style={ui.boton} onPress={() => Linking.openSettings()}>
+              <Text style={ui.botonTexto}>Abrir ajustes</Text>
+            </Pressable>
+            <Pressable onPress={() => setMostrarCamara(false)}>
+              <Text style={{ color: colores.alerta, textAlign: "center" }}>
+                Cancelar
+              </Text>
+            </Pressable>
+          </View>
+        );
+      }
       return <View />;
     }
     return (
@@ -101,7 +136,7 @@ export default function NuevaSubasta() {
       >
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 10 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 32, gap: 10 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
@@ -124,6 +159,7 @@ export default function NuevaSubasta() {
           <TextInput
             style={ui.input}
             placeholder="Ej. Audifonos inalambricos"
+            placeholderTextColor={colores.gris}
             value={nombre}
             onChangeText={setNombre}
           />
@@ -131,6 +167,7 @@ export default function NuevaSubasta() {
           <TextInput
             style={ui.input}
             placeholder="Estado, color, caracteristicas..."
+            placeholderTextColor={colores.gris}
             value={descripcion}
             onChangeText={setDescripcion}
             multiline
@@ -144,6 +181,7 @@ export default function NuevaSubasta() {
           <TextInput
             style={ui.input}
             placeholder="Ej. 100"
+            placeholderTextColor={colores.gris}
             keyboardType="number-pad"
             value={precio}
             onChangeText={setPrecio}
@@ -158,6 +196,7 @@ export default function NuevaSubasta() {
           <TextInput
             style={ui.input}
             placeholder="Ej. 10"
+            placeholderTextColor={colores.gris}
             keyboardType="number-pad"
             value={incremento}
             onChangeText={setIncremento}
@@ -166,11 +205,13 @@ export default function NuevaSubasta() {
             Duracion (minutos)
           </Text>
           <Text style={ui.pista}>
-            Cuanto tiempo aceptara ofertas a partir de publicarse. Ej: 60
+            Cuanto tiempo aceptara ofertas a partir de publicarse. Maximo: 5
+            dias (7200 minutos).
           </Text>
           <TextInput
             style={ui.input}
-            placeholder="Ej. 60"
+            placeholder="Ej. 60 (max 7200)"
+            placeholderTextColor={colores.gris}
             keyboardType="number-pad"
             value={minutos}
             onChangeText={setMinutos}
@@ -178,7 +219,8 @@ export default function NuevaSubasta() {
         </ScrollView>
         <View
           style={{
-            padding: 16,
+            padding: 20,
+            paddingTop: 12,
             borderTopWidth: 1,
             borderTopColor: colores.borde,
           }}
@@ -186,7 +228,7 @@ export default function NuevaSubasta() {
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ disabled: guardando, busy: guardando }}
-            style={ui.boton}
+            style={[ui.boton, guardando && ui.deshabilitado]}
             onPress={guardar}
             disabled={guardando}
           >
