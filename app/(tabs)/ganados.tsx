@@ -1,103 +1,39 @@
-import { Encabezado, ImagenProducto } from "../../src/components/Editorial";
-import { useActualizarPantalla } from "../../src/components/useActualizarPantalla";
+// Integrante 1 - Productos ganados
 import { useQuery } from "@tanstack/react-query";
-import { router } from "expo-router";
-import { FlatList, Pressable, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Estado, Insignia } from "../../src/components/Ui";
-import { usePerfilActual } from "../../src/components/usePerfilActual";
+import { FlatList, Text, View } from "react-native";
+import { useSesion } from "../../src/lib/sesion";
 import { supabase } from "../../src/lib/supabase";
-import { fecha, mensajeError, numero, ui } from "../../src/lib/ui";
+import { colores, ui } from "../../src/lib/ui";
+
 export default function Ganados() {
-  const { session } = usePerfilActual();
-  const uid = session?.user.id;
-  const consulta = useQuery({
-    queryKey: ["ganados", uid],
-    enabled: !!uid,
+  const { usuario } = useSesion();
+  const { data = [] } = useQuery({
+    queryKey: ["ganados", usuario?.id],
+    enabled: !!usuario,
     queryFn: async () => {
-      const { data: ganadores, error } = await supabase
+      const { data, error } = await supabase
         .from("ganadores")
-        .select("*")
-        .eq("usuario_id", uid!)
+        .select("id, monto, fecha, productos(nombre)")
+        .eq("usuario_id", usuario!.id)
         .order("fecha", { ascending: false });
       if (error) throw error;
-      if (!ganadores?.length) return [];
-      const { data: productos, error: fallo } = await supabase
-        .from("productos")
-        .select("*")
-        .in("id", [...new Set(ganadores.map((g) => g.producto_id))]);
-      if (fallo) throw fallo;
-      const mapa = new Map((productos ?? []).map((p) => [p.id, p]));
-      return ganadores.map((g) => ({
-        ...g,
-        producto: mapa.get(g.producto_id) ?? null,
-      }));
+      return data as unknown as { id: string; monto: number; fecha: string; productos: { nombre: string } }[];
     },
   });
-  useActualizarPantalla(consulta.refetch, !!uid);
   return (
-    <SafeAreaView edges={["bottom"]} style={ui.pantalla}>
+    <View style={ui.pantalla}>
       <FlatList
-        data={consulta.isError ? [] : (consulta.data ?? [])}
+        data={data}
         keyExtractor={(g) => g.id}
-        contentContainerStyle={ui.contenido}
-        onRefresh={() => {
-          void consulta.refetch();
-        }}
-        refreshing={consulta.isRefetching}
-        ListHeaderComponent={
-          <View style={{ paddingBottom: 16 }}>
-            <Encabezado
-              ceja="TU COLECCIÓN"
-              titulo="Tus victorias."
-              detalle="Productos adjudicados a tu cuenta al cierre de cada subasta."
-            />
-          </View>
-        }
-        ListEmptyComponent={
-          consulta.isPending ? (
-            <Estado titulo="Cargando tus victorias…" cargando />
-          ) : consulta.isError ? (
-            <Estado
-              titulo="No pudimos cargar tus productos"
-              detalle={mensajeError(consulta.error)}
-              accion="Reintentar"
-              onPress={() => {
-                void consulta.refetch();
-              }}
-            />
-          ) : (
-            <Estado
-              titulo="Aún no has ganado una subasta"
-              detalle="Sigue participando. Tu próxima victoria puede estar cerca."
-              accion="Explorar subastas"
-              onPress={() => router.navigate("/(tabs)")}
-            />
-          )
-        }
+        contentContainerStyle={{ gap: 8 }}
+        ListEmptyComponent={<Text style={{ color: colores.gris }}>Aun no has ganado subastas.</Text>}
         renderItem={({ item }) => (
-          <Pressable
-            accessibilityRole="button"
-            style={ui.tarjeta}
-            onPress={() => router.push(`/subasta/${item.producto_id}`)}
-          >
-            <ImagenProducto
-              uri={item.producto?.imagen_url}
-              nombre={item.producto?.nombre ?? "Producto"}
-              alto={170}
-            />
-            <Insignia texto="Subasta ganada" tono="exito" />
-            <Text style={ui.subtitulo}>
-              {item.producto?.nombre ?? "Producto no disponible"}
-            </Text>
-            <Text style={ui.cifra}>
-              {numero(item.monto)} <Text style={ui.secundario}>créditos</Text>
-            </Text>
-            <Text style={ui.secundario}>Ganada el {fecha(item.fecha)}</Text>
-            <Text style={ui.enlace}>Ver subasta →</Text>
-          </Pressable>
+          <View style={ui.tarjeta}>
+            <Text style={{ fontWeight: "600" }}>{item.productos.nombre}</Text>
+            <Text>Ganado por {item.monto} creditos - {new Date(item.fecha).toLocaleDateString()}</Text>
+          </View>
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 }

@@ -19,7 +19,7 @@ export function useSubastaRealtime(productoId: string) {
     (async () => {
       const [{ data: p }, { data: o }] = await Promise.all([
         supabase.from("productos").select("*").eq("id", productoId).single(),
-        supabase.from("ofertas").select("*").eq("producto_id", productoId).order("fecha", { ascending: false }).limit(20),
+        supabase.from("ofertas").select("*").eq("producto_id", productoId).order("monto", { ascending: false }).limit(20),
       ]);
       if (!activo) return;
       setProducto(p);
