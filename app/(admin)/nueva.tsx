@@ -3,12 +3,25 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { subirFotoProducto } from "../../src/features/admin/subirFoto";
 import { obtenerUbicacion } from "../../src/hooks/useUbicacion";
 import { useSesion } from "../../src/lib/sesion";
 import { supabase } from "../../src/lib/supabase";
 import { colores, ui } from "../../src/lib/ui";
+
+const DURACION_MAXIMA_MINUTOS = 5 * 24 * 60;
 
 export default function NuevaSubasta() {
   const { usuario } = useSesion();
@@ -36,7 +49,20 @@ export default function NuevaSubasta() {
   };
 
   const guardar = async () => {
-    if (!nombre || !precio) return Alert.alert("Faltan datos", "Nombre y precio inicial son obligatorios.");
+    if (!nombre || !precio)
+      return Alert.alert(
+        "Faltan datos",
+        "Nombre y precio inicial son obligatorios.",
+      );
+    const duracionMinutos = Number(minutos);
+
+    if (duracionMinutos > DURACION_MAXIMA_MINUTOS) {
+      return Alert.alert(
+        "Duracion invalida",
+        "La duracion maxima permitida es de 5 dias (7200 minutos).",
+      );
+    }
+
     setGuardando(true);
     try {
       const imagen_url = foto ? await subirFotoProducto(foto) : null;
@@ -50,7 +76,9 @@ export default function NuevaSubasta() {
         precio_actual: Number(precio),
         incremento_minimo: Number(incremento),
         fecha_inicio: ahora.toISOString(),
-        fecha_fin: new Date(ahora.getTime() + Number(minutos) * 60_000).toISOString(),
+        fecha_fin: new Date(
+          ahora.getTime() + duracionMinutos * 60_000,
+        ).toISOString(),
         estado: "activa",
         latitud: ubic?.latitud ?? null,
         longitud: ubic?.longitud ?? null,
@@ -70,12 +98,17 @@ export default function NuevaSubasta() {
       if (permiso && !permiso.canAskAgain) {
         return (
           <View style={[ui.pantalla, { justifyContent: "center", gap: 12 }]}>
-            <Text>Desactivaste el permiso de camara. Actívalo en los ajustes del sistema para tomar la foto.</Text>
+            <Text>
+              Desactivaste el permiso de camara. Actívalo en los ajustes del
+              sistema para tomar la foto.
+            </Text>
             <Pressable style={ui.boton} onPress={() => Linking.openSettings()}>
               <Text style={ui.botonTexto}>Abrir ajustes</Text>
             </Pressable>
             <Pressable onPress={() => setMostrarCamara(false)}>
-              <Text style={{ color: colores.alerta, textAlign: "center" }}>Cancelar</Text>
+              <Text style={{ color: colores.alerta, textAlign: "center" }}>
+                Cancelar
+              </Text>
             </Pressable>
           </View>
         );
@@ -93,26 +126,118 @@ export default function NuevaSubasta() {
   }
 
   return (
-    <ScrollView contentContainerStyle={[ui.pantalla, { gap: 10 }]}>
-      <Pressable onPress={() => setMostrarCamara(true)} style={[ui.tarjeta, { alignItems: "center" }]}>
-        {foto ? <Image source={foto} style={{ width: "100%", height: 180, borderRadius: 8 }} /> : <Text>Tomar foto del producto</Text>}
-      </Pressable>
-      <Text style={{ fontWeight: "600", marginTop: 6 }}>Nombre del producto</Text>
-      <TextInput style={ui.input} placeholder="Ej. Audifonos inalambricos" placeholderTextColor={colores.gris} value={nombre} onChangeText={setNombre} />
-      <Text style={{ fontWeight: "600", marginTop: 6 }}>Descripcion</Text>
-      <TextInput style={ui.input} placeholder="Estado, color, caracteristicas..." placeholderTextColor={colores.gris} value={descripcion} onChangeText={setDescripcion} multiline />
-      <Text style={{ fontWeight: "600", marginTop: 6 }}>Precio inicial (creditos)</Text>
-      <Text style={ui.pista}>Cuanto vale el producto al empezar la subasta. Ej: 100</Text>
-      <TextInput style={ui.input} placeholder="Ej. 100" placeholderTextColor={colores.gris} keyboardType="number-pad" value={precio} onChangeText={setPrecio} />
-      <Text style={{ fontWeight: "600", marginTop: 6 }}>Incremento minimo</Text>
-      <Text style={ui.pista}>De cuanto en cuanto debe subir cada oferta (si es 10, se oferta 100, 110, 120...).</Text>
-      <TextInput style={ui.input} placeholder="Ej. 10" placeholderTextColor={colores.gris} keyboardType="number-pad" value={incremento} onChangeText={setIncremento} />
-      <Text style={{ fontWeight: "600", marginTop: 6 }}>Duracion (minutos)</Text>
-      <Text style={ui.pista}>Cuanto tiempo aceptara ofertas a partir de publicarse. Ej: 60</Text>
-      <TextInput style={ui.input} placeholder="Ej. 60" placeholderTextColor={colores.gris} keyboardType="number-pad" value={minutos} onChangeText={setMinutos} />
-      <Pressable style={ui.boton} onPress={guardar} disabled={guardando}>
-        <Text style={ui.botonTexto}>{guardando ? "Guardando..." : "Publicar subasta"}</Text>
-      </Pressable>
-    </ScrollView>
+    <SafeAreaView
+      edges={["bottom"]}
+      style={{ flex: 1, backgroundColor: colores.fondo }}
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 32, gap: 10 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          <Pressable
+            onPress={() => setMostrarCamara(true)}
+            style={[ui.tarjeta, { alignItems: "center" }]}
+          >
+            {foto ? (
+              <Image
+                source={foto}
+                style={{ width: "100%", height: 180, borderRadius: 8 }}
+              />
+            ) : (
+              <Text>Tomar foto del producto</Text>
+            )}
+          </Pressable>
+          <Text style={{ fontWeight: "600", marginTop: 6 }}>
+            Nombre del producto
+          </Text>
+          <TextInput
+            style={ui.input}
+            placeholder="Ej. Audifonos inalambricos"
+            placeholderTextColor={colores.gris}
+            value={nombre}
+            onChangeText={setNombre}
+          />
+          <Text style={{ fontWeight: "600", marginTop: 6 }}>Descripcion</Text>
+          <TextInput
+            style={ui.input}
+            placeholder="Estado, color, caracteristicas..."
+            placeholderTextColor={colores.gris}
+            value={descripcion}
+            onChangeText={setDescripcion}
+            multiline
+          />
+          <Text style={{ fontWeight: "600", marginTop: 6 }}>
+            Precio inicial (creditos)
+          </Text>
+          <Text style={ui.pista}>
+            Cuanto vale el producto al empezar la subasta. Ej: 100
+          </Text>
+          <TextInput
+            style={ui.input}
+            placeholder="Ej. 100"
+            placeholderTextColor={colores.gris}
+            keyboardType="number-pad"
+            value={precio}
+            onChangeText={setPrecio}
+          />
+          <Text style={{ fontWeight: "600", marginTop: 6 }}>
+            Incremento minimo
+          </Text>
+          <Text style={ui.pista}>
+            De cuanto en cuanto debe subir cada oferta (si es 10, se oferta 100,
+            110, 120...).
+          </Text>
+          <TextInput
+            style={ui.input}
+            placeholder="Ej. 10"
+            placeholderTextColor={colores.gris}
+            keyboardType="number-pad"
+            value={incremento}
+            onChangeText={setIncremento}
+          />
+          <Text style={{ fontWeight: "600", marginTop: 6 }}>
+            Duracion (minutos)
+          </Text>
+          <Text style={ui.pista}>
+            Cuanto tiempo aceptara ofertas a partir de publicarse. Maximo: 5
+            dias (7200 minutos).
+          </Text>
+          <TextInput
+            style={ui.input}
+            placeholder="Ej. 60 (max 7200)"
+            placeholderTextColor={colores.gris}
+            keyboardType="number-pad"
+            value={minutos}
+            onChangeText={setMinutos}
+          />
+        </ScrollView>
+        <View
+          style={{
+            padding: 20,
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: colores.borde,
+          }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: guardando, busy: guardando }}
+            style={[ui.boton, guardando && ui.deshabilitado]}
+            onPress={guardar}
+            disabled={guardando}
+          >
+            <Text style={ui.botonTexto}>
+              {guardando ? "Guardando..." : "Publicar subasta"}
+            </Text>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

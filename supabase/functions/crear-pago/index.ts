@@ -9,9 +9,9 @@ import { admin, json } from "../_shared/supabase.ts";
 
 // Paquetes fijos: el precio NUNCA lo manda la app.
 const PAQUETES: Record<string, { creditos: number; precioMXN: number }> = {
-  basico: { creditos: 100, precioMXN: 50 },
-  medio: { creditos: 250, precioMXN: 110 },
-  pro: { creditos: 600, precioMXN: 240 },
+  basico: { creditos: 100, precioMXN: 100 },
+  medio: { creditos: 250, precioMXN: 250 },
+  pro: { creditos: 600, precioMXN: 600 },
 };
 
 Deno.serve(async (req) => {

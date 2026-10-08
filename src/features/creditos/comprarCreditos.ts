@@ -4,9 +4,9 @@ import { supabase } from "../../lib/supabase";
 
 export type Paquete = "basico" | "medio" | "pro";
 export const PAQUETES: { id: Paquete; creditos: number; precio: number }[] = [
-  { id: "basico", creditos: 100, precio: 50 },
-  { id: "medio", creditos: 250, precio: 110 },
-  { id: "pro", creditos: 600, precio: 240 },
+  { id: "basico", creditos: 100, precio: 100 },
+  { id: "medio", creditos: 250, precio: 250 },
+  { id: "pro", creditos: 600, precio: 600 },
 ];
 
 type Stripe = ReturnType<typeof useStripe>;

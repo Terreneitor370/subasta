@@ -22,7 +22,7 @@ git clone https://github.com/Terreneitor370/subasta.git
 cd subasta
 npm install
 cp .env.example .env        # en Windows PowerShell: Copy-Item .env.example .env
-# Completar .env con los valores que comparte Kassie (Backend y BD)
+# Completar .env con los valores que comparte Jorge (Backend y BD)
 ```
 
 ### iPhone con Expo Go (Kassie, Jorge y Jeshua)
