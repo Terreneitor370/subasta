@@ -1,4 +1,5 @@
 import { Encabezado, ImagenProducto } from "../../src/components/Editorial";
+import { useCampoVisible } from "../../src/hooks/useCampoVisible";
 import { useActualizarPantalla } from "../../src/components/useActualizarPantalla";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -31,6 +32,7 @@ import {
   ui,
 } from "../../src/lib/ui";
 export default function Subastas() {
+  const campos = useCampoVisible();
   const { usuario } = usePerfilActual();
   const [ubicacion, setUbicacion] = useState<Coordenadas | null>(null);
   const [localizando, setLocalizando] = useState(false);
@@ -95,6 +97,12 @@ export default function Subastas() {
   return (
     <SafeAreaView edges={["bottom"]} style={ui.pantalla}>
       <FlatList
+        ref={(vista) => {
+          campos.ref.current = vista;
+        }}
+        onScroll={campos.onScroll}
+        scrollEventThrottle={16}
+        onLayout={campos.revelarCampo}
         data={consulta.isError ? [] : lista}
         keyExtractor={(p) => p.id}
         onRefresh={() => {
@@ -114,6 +122,7 @@ export default function Subastas() {
               detalle="Explora los productos disponibles y participa en sus subastas."
             />
             <TextInput
+              onFocus={campos.revelarCampo}
               accessibilityLabel="Buscar subastas por nombre"
               style={ui.input}
               placeholder="Buscar un producto…"

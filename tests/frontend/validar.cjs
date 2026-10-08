@@ -65,6 +65,7 @@ function FlatList(props) {
   );
 }
 const RN = {
+  Keyboard: { addListener: () => ({ remove: () => {} }) },
   ...Object.fromEntries(
     [
       "View",

@@ -1,3 +1,4 @@
+import { VistaConTeclado } from "../../src/components/VistaConTeclado";
 // Integrante 5 (formulario) + Integrante 4 (CAMARA para la foto, GPS para la ubicacion)
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
@@ -5,9 +6,7 @@ import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
   Linking,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -15,6 +14,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { useCampoVisible } from "../../src/hooks/useCampoVisible";
 import { subirFotoProducto } from "../../src/features/admin/subirFoto";
 import { obtenerUbicacion } from "../../src/hooks/useUbicacion";
 import { useSesion } from "../../src/lib/sesion";
@@ -24,6 +25,8 @@ import { colores, ui } from "../../src/lib/ui";
 const DURACION_MAXIMA_MINUTOS = 5 * 24 * 60;
 
 export default function NuevaSubasta() {
+  const campos = useCampoVisible();
+
   const { usuario } = useSesion();
   const [permiso, pedirPermiso] = useCameraPermissions();
   const camara = useRef<CameraView>(null);
@@ -130,11 +133,14 @@ export default function NuevaSubasta() {
       edges={["bottom"]}
       style={{ flex: 1, backgroundColor: colores.fondo }}
     >
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <VistaConTeclado>
         <ScrollView
+          ref={(vista) => {
+            campos.ref.current = vista;
+          }}
+          onScroll={campos.onScroll}
+          scrollEventThrottle={16}
+          onLayout={campos.revelarCampo}
           style={{ flex: 1 }}
           contentContainerStyle={{ padding: 20, paddingBottom: 32, gap: 10 }}
           keyboardShouldPersistTaps="handled"
@@ -157,6 +163,7 @@ export default function NuevaSubasta() {
             Nombre del producto
           </Text>
           <TextInput
+            onFocus={campos.revelarCampo}
             style={ui.input}
             placeholder="Ej. Audifonos inalambricos"
             placeholderTextColor={colores.gris}
@@ -165,7 +172,9 @@ export default function NuevaSubasta() {
           />
           <Text style={{ fontWeight: "600", marginTop: 6 }}>Descripcion</Text>
           <TextInput
-            style={ui.input}
+            onFocus={campos.revelarCampo}
+            onContentSizeChange={campos.revelarCampo}
+            style={[ui.input, { maxHeight: 140, textAlignVertical: "top" }]}
             placeholder="Estado, color, caracteristicas..."
             placeholderTextColor={colores.gris}
             value={descripcion}
@@ -179,6 +188,7 @@ export default function NuevaSubasta() {
             Cuanto vale el producto al empezar la subasta. Ej: 100
           </Text>
           <TextInput
+            onFocus={campos.revelarCampo}
             style={ui.input}
             placeholder="Ej. 100"
             placeholderTextColor={colores.gris}
@@ -194,6 +204,7 @@ export default function NuevaSubasta() {
             110, 120...).
           </Text>
           <TextInput
+            onFocus={campos.revelarCampo}
             style={ui.input}
             placeholder="Ej. 10"
             placeholderTextColor={colores.gris}
@@ -209,6 +220,7 @@ export default function NuevaSubasta() {
             dias (7200 minutos).
           </Text>
           <TextInput
+            onFocus={campos.revelarCampo}
             style={ui.input}
             placeholder="Ej. 60 (max 7200)"
             placeholderTextColor={colores.gris}
@@ -237,7 +249,7 @@ export default function NuevaSubasta() {
             </Text>
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </VistaConTeclado>
     </SafeAreaView>
   );
 }

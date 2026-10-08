@@ -1,19 +1,15 @@
+import { VistaConTeclado } from "./VistaConTeclado";
 import { Link } from "expo-router";
 import { useRef, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { colores, ui } from "../lib/ui";
 import { Boton } from "./Ui";
 import { Marca } from "./Editorial";
+import { useCampoVisible } from "../hooks/useCampoVisible";
 export function AuthForm({ registro = false }: { registro?: boolean }) {
+  const campos = useCampoVisible();
   const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
@@ -81,11 +77,14 @@ export function AuthForm({ registro = false }: { registro?: boolean }) {
   };
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colores.fondo }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <VistaConTeclado>
         <ScrollView
+          ref={(vista) => {
+            campos.ref.current = vista;
+          }}
+          onScroll={campos.onScroll}
+          scrollEventThrottle={16}
+          onLayout={campos.revelarCampo}
           style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
@@ -132,6 +131,7 @@ export function AuthForm({ registro = false }: { registro?: boolean }) {
                 <View style={{ gap: 6 }}>
                   <Text style={ui.etiqueta}>Nombre</Text>
                   <TextInput
+                    onFocus={campos.revelarCampo}
                     accessibilityLabel="Nombre"
                     style={ui.input}
                     placeholder="¿Cómo te llamas?"
@@ -147,6 +147,7 @@ export function AuthForm({ registro = false }: { registro?: boolean }) {
               <View style={{ gap: 6 }}>
                 <Text style={ui.etiqueta}>Correo electrónico</Text>
                 <TextInput
+                  onFocus={campos.revelarCampo}
                   accessibilityLabel="Correo electrónico"
                   style={ui.input}
                   placeholder="nombre@correo.com"
@@ -163,6 +164,7 @@ export function AuthForm({ registro = false }: { registro?: boolean }) {
               <View style={{ gap: 6 }}>
                 <Text style={ui.etiqueta}>Contraseña</Text>
                 <TextInput
+                  onFocus={campos.revelarCampo}
                   accessibilityLabel="Contraseña"
                   style={ui.input}
                   placeholder={
@@ -182,6 +184,7 @@ export function AuthForm({ registro = false }: { registro?: boolean }) {
                 <View style={{ gap: 6 }}>
                   <Text style={ui.etiqueta}>Confirmar contraseña</Text>
                   <TextInput
+                    onFocus={campos.revelarCampo}
                     accessibilityLabel="Confirmar contraseña"
                     style={ui.input}
                     placeholder="Repite tu contraseña"
@@ -231,7 +234,7 @@ export function AuthForm({ registro = false }: { registro?: boolean }) {
             </View>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </VistaConTeclado>
     </SafeAreaView>
   );
 }

@@ -1,4 +1,7 @@
+import { VistaConTeclado } from "../../src/components/VistaConTeclado";
 import { ImagenProducto } from "../../src/components/Editorial";
+import { useCampoVisible } from "../../src/hooks/useCampoVisible";
+
 // UI compartida de Jorge: consume los hooks de Jeshua e Isabel sin modificarlos.
 import { useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
@@ -7,9 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Text,
   TextInput,
   View,
@@ -61,6 +62,8 @@ export default function DetalleSubasta() {
   );
 }
 function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
+  const campos = useCampoVisible();
+
   const { usuario } = usePerfilActual();
   const [focused, setFocused] = useState(false);
   useFocusEffect(
@@ -216,11 +219,14 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
       edges={["bottom"]}
       style={{ flex: 1, backgroundColor: colores.fondo }}
     >
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <VistaConTeclado>
         <FlatList
+          ref={(vista) => {
+            campos.ref.current = vista;
+          }}
+          onScroll={campos.onScroll}
+          scrollEventThrottle={16}
+          onLayout={campos.revelarCampo}
           data={ofertas}
           keyExtractor={(o) => o.id}
           keyboardShouldPersistTaps="handled"
@@ -279,6 +285,7 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
                       : ""}
                   </Text>
                   <TextInput
+                    onFocus={campos.revelarCampo}
                     accessibilityLabel="Monto de tu oferta en créditos"
                     style={ui.input}
                     keyboardType="number-pad"
@@ -415,7 +422,7 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
             </View>
           </View>
         </Modal>
-      </KeyboardAvoidingView>
+      </VistaConTeclado>
     </SafeAreaView>
   );
 }
