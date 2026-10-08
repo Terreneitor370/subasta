@@ -53,6 +53,7 @@ export default function DetalleSubasta() {
 
   if (!producto) return <ActivityIndicator style={{ flex: 1 }} />;
   const voyGanando = producto.lider_id === usuario?.id;
+  const gane = producto.estado === "finalizada" && voyGanando;
 
   return (
     <View style={[ui.pantalla, { gap: 10 }]}>
@@ -60,11 +61,17 @@ export default function DetalleSubasta() {
       <Text style={ui.titulo}>{producto.nombre}</Text>
       <Text style={{ color: colores.gris }}>{producto.descripcion}</Text>
 
+      {gane && (
+        <View style={[ui.tarjeta, { backgroundColor: colores.exito, alignItems: "center" }]}>
+          <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>Felicidades, eres el ganador</Text>
+        </View>
+      )}
+
       <View style={[ui.tarjeta, { flexDirection: "row", justifyContent: "space-between" }]}>
         <View>
           <Text style={{ color: colores.gris }}>Precio actual</Text>
           <Text style={{ fontSize: 26, fontWeight: "700" }}>{producto.precio_actual}</Text>
-          {voyGanando && <Text style={{ color: colores.exito }}>Vas ganando</Text>}
+          {voyGanando && <Text style={{ color: colores.exito }}>{gane ? "Ganaste" : "Vas ganando"}</Text>}
         </View>
         <View style={{ alignItems: "flex-end" }}>
           <Text style={{ color: colores.gris }}>Tiempo restante</Text>

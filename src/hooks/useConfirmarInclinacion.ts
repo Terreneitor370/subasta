@@ -3,7 +3,7 @@ import { Gyroscope } from "expo-sensors";
 import { useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 
-const ANGULO_CONFIRMAR = 35; // grados de inclinacion hacia el frente
+const ANGULO_CONFIRMAR = 20; // grados de inclinacion hacia el frente (bajado de 35: se sentia lento como gesto)
 const INTERVALO_MS = 50;
 
 /**
