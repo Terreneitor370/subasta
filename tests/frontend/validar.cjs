@@ -79,8 +79,8 @@ const RN = {
     ].map((n) => [n, n]),
   ),
   FlatList,
-  Modal: ({ visible, children }) =>
-    visible ? e("Modal", null, children) : null,
+  Modal: ({ visible, children, ...props }) =>
+    visible ? e("Modal", props, children) : null,
   Platform: { OS: "ios" },
   StyleSheet: { create: (s) => s },
   AppState: {
@@ -414,6 +414,30 @@ async function run() {
     await mount(ImagenProducto, { nombre: "Audífonos" });
     has("Imagen no disponible");
     assert.equal(tree.root.findAllByType("Image").length, 0);
+  });
+  await test("Foto: abre sin navegar, muestra imagen completa y limita el zoom", async () => {
+    await mount(ImagenProducto, {nombre: "Audífonos", uri: "https://example.test/foto.png"});
+    let detenido = false;
+    await act(async () => button("Ampliar foto de Audífonos").props.onPress({stopPropagation: () => { detenido = true; }}));
+    assert.ok(detenido);
+    assert.equal(tree.root.findAllByType("Image")[1].props.contentFit, "contain");
+    const ampliar = () => tree.root.findAllByType("Pressable").find(node => node.props.accessibilityLabel === "Ampliar foto");
+    for (let i = 0; i < 6; i++) await act(async () => ampliar().props.onPress());
+    has("400 %");
+    assert.equal(ampliar().props.disabled, true);
+    await press("Restablecer tamaño de foto");
+    has("100 %");
+    assert.equal(button("Reducir foto").props.disabled, true);
+    await act(async () => tree.root.findByType("Modal").props.onRequestClose());
+    assert.equal(tree.root.findAllByType("Modal").length, 0);
+  });
+  await test("Foto: un fallo en pantalla completa permite cerrar y volver a intentar", async () => {
+    await mount(ImagenProducto, {nombre: "Audífonos", uri: "https://example.test/foto.png"});
+    await act(async () => button("Ampliar foto de Audífonos").props.onPress({stopPropagation() {}}));
+    await act(async () => tree.root.findAllByType("Image")[1].props.onError());
+    has("No se pudo cargar la foto");
+    await press("Cerrar foto");
+    assert.equal(tree.root.findAllByType("Modal").length, 0);
   });
   await test("Imagen: URL rota muestra respaldo", async () => {
     await mount(ImagenProducto, {

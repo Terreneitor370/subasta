@@ -1,8 +1,9 @@
 import { Image } from "expo-image";
 import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { colores, tipografia, ui } from "../lib/ui";
 import { Icono } from "./Icono";
+import { VisorFoto } from "./VisorFoto";
 
 export function Marca() {
   return (
@@ -52,20 +53,43 @@ export function ImagenProducto({
   compacto?: boolean;
 }) {
   const [fallo, setFallo] = useState(false);
-  useEffect(() => setFallo(false), [uri]);
+  const [ampliada, setAmpliada] = useState(false);
+  useEffect(() => {
+    setFallo(false);
+    setAmpliada(false);
+  }, [uri]);
   if (uri && !fallo) {
     return (
-      <Image
-        source={uri}
-        style={{
-          height: alto,
-          borderRadius: 6,
-          backgroundColor: colores.suave,
-        }}
-        contentFit="cover"
-        accessibilityLabel={nombre}
-        onError={() => setFallo(true)}
-      />
+      <>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Ampliar foto de ${nombre}`}
+          accessibilityHint="Abre la foto completa con controles de zoom"
+          onPress={(evento) => {
+            evento.stopPropagation();
+            setAmpliada(true);
+          }}
+        >
+          <Image
+            source={uri}
+            style={{
+              height: alto,
+              borderRadius: 6,
+              backgroundColor: colores.suave,
+            }}
+            contentFit="cover"
+            accessibilityLabel={nombre}
+            onError={() => setFallo(true)}
+          />
+        </Pressable>
+        {ampliada && (
+          <VisorFoto
+            uri={uri}
+            nombre={nombre}
+            cerrar={() => setAmpliada(false)}
+          />
+        )}
+      </>
     );
   }
   return (
