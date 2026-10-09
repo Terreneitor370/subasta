@@ -360,7 +360,7 @@ async function authReady(reg = false) {
   if (reg) await fill("Confirmar contraseña", "secreto123");
 }
 async function run() {
-  const { enteroPositivo, validarNuevaSubasta, idDesdeQR } = require(path.join(project, "src/lib/validacion.ts"));
+  const { enteroPositivo, validarNuevaSubasta } = require(path.join(project, "src/lib/validacion.ts"));
   await test("Importes: rechaza decimales, exponentes, negativos y desbordamientos", async () => {
     for (const value of ["", "0", "-1", "1.5", "1e3", "0x10", "Infinity", "2147483648", "999999999999999999"]) assert.equal(enteroPositivo(value), null);
     assert.equal(enteroPositivo(" 100 "), 100);
@@ -373,12 +373,6 @@ async function run() {
     assert.ok(validarNuevaSubasta({...datos, nombre: "  "}).nombre);
     assert.ok(validarNuevaSubasta({...datos, descripcion: "a".repeat(2001)}).descripcion);
     assert.ok(validarNuevaSubasta({...datos, precio: "2147483647"}).incremento);
-  });
-  await test("QR: acepta rutas de subasta y rechaza texto ajeno", async () => {
-    assert.equal(idDesdeQR(pid), pid);
-    assert.equal(idDesdeQR(`subasta://subasta/${pid}`), pid);
-    assert.equal(idDesdeQR(`https://ejemplo.test/subasta/${pid}`), pid);
-    for (const value of ["otro código", `texto ${pid}`, `https://ejemplo.test/perfil/${pid}`, `javascript:${pid}`]) assert.equal(idDesdeQR(value), null);
   });
   await test("Nueva subasta: formulario inválido no envía una publicación", async () => {
     await mount(NuevaSubasta);
@@ -408,7 +402,10 @@ async function run() {
       .findAllByType("Text")
       .map((node) => text(node).replace(/\s+/g, ""));
     for (const paquete of PAQUETES)
-      assert.ok(precios.includes(`$${paquete.precio}MXN·modoprueba`));
+      assert.ok(precios.includes(`$${paquete.precio}MXN`));
+    lacks("modo prueba");
+    lacks("Pagos de prueba");
+    lacks("4242");
   });
   await test("Imagen: producto sin foto conserva su presentación", async () => {
     await mount(ImagenProducto, { nombre: "Audífonos" });
@@ -611,10 +608,9 @@ async function run() {
     assert.ok(alerts[0][0].includes("Ubicación"));
     has("Cercanas a mí");
   });
-  await test("Subastas: QR usa ruta existente", async () => {
+  await test("Subastas: no muestra el escáner QR", async () => {
     await mount(screens.subastas);
-    await press("Escanear QR");
-    assert.deepEqual(routes[0], ["push", "/escanear"]);
+    lacks("Escanear QR");
   });
   await test("Ofertas: producto ausente no rompe render", async () => {
     state.query.data = [
@@ -870,8 +866,8 @@ async function run() {
   });
   for (const [session, role, allowed] of [
     [false, "usuario", ["index", "(auth)"]],
-    [true, "usuario", ["index", "(tabs)", "subasta/[id]", "escanear"]],
-    [true, "admin", ["index", "(tabs)", "subasta/[id]", "escanear", "(admin)"]],
+    [true, "usuario", ["index", "(tabs)", "subasta/[id]"]],
+    [true, "admin", ["index", "(tabs)", "subasta/[id]", "(admin)"]],
   ])
     await test(`Rutas: sesión ${session}, rol ${role}`, async () => {
       state.session.usuario.rol = role;

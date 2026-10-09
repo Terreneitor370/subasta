@@ -79,10 +79,6 @@ function Navegacion() {
           name="subasta/[id]"
           options={{ title: "Detalle de subasta", headerBackTitle: "Volver" }}
         />
-        <Stack.Screen
-          name="escanear"
-          options={{ title: "Escanear QR", presentation: "modal" }}
-        />
       </Stack.Protected>
       <Stack.Protected guard={!!session && usuario?.rol === "admin"}>
         <Stack.Screen name="(admin)" options={{ headerShown: false }} />

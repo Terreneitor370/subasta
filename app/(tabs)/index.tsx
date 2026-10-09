@@ -140,14 +140,6 @@ export default function Subastas() {
                   onPress={cercanas}
                 />
               </View>
-              <View style={{ flex: 1 }}>
-                <Boton
-                  titulo="Escanear QR"
-                  icono="qr"
-                  secundario
-                  onPress={() => router.push("/escanear")}
-                />
-              </View>
             </View>
             <View style={ui.fila}>
               {(["activa", "programada"] as const).map((e) => (

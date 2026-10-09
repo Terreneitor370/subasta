@@ -8,7 +8,6 @@ export type NombreIcono =
   | "creditos"
   | "perfil"
   | "camara"
-  | "qr"
   | "ojo"
   | "ojo-cerrado";
 
@@ -135,33 +134,6 @@ export function Icono({
           {borde({ width: 21, height: 15, left: 1.5, top: 6, borderRadius: 3 })}
           {borde({ width: 9, height: 9, left: 7.5, top: 9, borderRadius: 5 })}
           {borde({ width: 8, height: 4, left: 8, top: 2, borderRadius: 1 })}
-        </>
-      );
-      break;
-    case "qr":
-      figura = (
-        <>
-          {[
-            [2, 2],
-            [14, 2],
-            [2, 14],
-          ].map(([left, top]) => (
-            <View
-              key={`${left}:${top}`}
-              style={{
-                position: "absolute",
-                width: 8,
-                height: 8,
-                left,
-                top,
-                borderWidth: 1.8,
-                borderColor: color,
-              }}
-            />
-          ))}
-          {linea({ width: 8, height: 2, left: 14, top: 14 })}
-          {linea({ width: 2, height: 8, left: 14, top: 14 })}
-          {linea({ width: 4, height: 4, left: 18, top: 18 })}
         </>
       );
       break;

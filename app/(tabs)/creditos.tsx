@@ -119,7 +119,7 @@ export default function Creditos() {
                 {numero(p.creditos)} <Text style={ui.secundario}>créditos</Text>
               </Text>
               <Text style={ui.texto}>
-                ${numero(p.precio)} MXN · modo prueba
+                ${numero(p.precio)} MXN
               </Text>
             </View>
             <Boton
@@ -133,13 +133,6 @@ export default function Creditos() {
             />
           </View>
         ))}
-        <View style={ui.tarjeta}>
-          <Text style={ui.etiqueta}>Pagos de prueba</Text>
-          <Text style={ui.secundario}>
-            Usa 4242 4242 4242 4242, una fecha futura y cualquier CVC en la
-            pasarela de prueba. No se cobra dinero real.
-          </Text>
-        </View>
         <Text style={ui.subtitulo}>Últimos movimientos</Text>
         {consulta.isPending ? (
           <Estado titulo="Cargando movimientos…" cargando />

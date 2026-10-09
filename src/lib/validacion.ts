@@ -41,17 +41,3 @@ export function validarNuevaSubasta(datos: DatosNuevaSubasta) {
       "Escribe una duración entera de 1 a 7200 minutos (máximo 5 días).";
   return errores;
 }
-
-const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-export function idDesdeQR(texto: string): string | null {
-  const valor = texto.trim();
-  if (new RegExp(`^${UUID}$`, "i").test(valor)) return valor;
-  return (
-    valor.match(
-      new RegExp(
-        `^(?:subasta://subasta/|https?://[^/]+/subasta/)(${UUID})/?$`,
-        "i",
-      ),
-    )?.[1] ?? null
-  );
-}
