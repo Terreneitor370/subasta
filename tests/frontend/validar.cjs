@@ -597,10 +597,10 @@ async function run() {
     await fill("Buscar subastas por nombre", " AUDÍFONOS ");
     has("Audífonos");
   });
-  await test("Subastas: filtro próximas cambia clave de consulta", async () => {
+  await test("Subastas: catálogo consulta solo activas y no ofrece próximas", async () => {
     await mount(screens.subastas);
-    await press("Próximamente");
-    assert.deepEqual(state.queryOptions.queryKey, ["subastas", "programada"]);
+    lacks("Próximamente");
+    assert.deepEqual(state.queryOptions.queryKey, ["subastas", "activa"]);
   });
   await test("Subastas: denegar GPS conserva pantalla", async () => {
     await mount(screens.subastas);

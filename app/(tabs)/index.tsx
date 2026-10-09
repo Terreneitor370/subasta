@@ -37,14 +37,13 @@ export default function Subastas() {
   const [ubicacion, setUbicacion] = useState<Coordenadas | null>(null);
   const [localizando, setLocalizando] = useState(false);
   const [busqueda, setBusqueda] = useState("");
-  const [estado, setEstado] = useState<"activa" | "programada">("activa");
   const consulta = useQuery({
-    queryKey: ["subastas", estado],
+    queryKey: ["subastas", "activa"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("productos")
         .select("*")
-        .eq("estado", estado)
+        .eq("estado", "activa")
         .order("fecha_fin", { ascending: true });
       if (error) throw error;
       return data;
@@ -140,26 +139,6 @@ export default function Subastas() {
                   onPress={cercanas}
                 />
               </View>
-            </View>
-            <View style={ui.fila}>
-              {(["activa", "programada"] as const).map((e) => (
-                <Pressable
-                  key={e}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: estado === e }}
-                  onPress={() => setEstado(e)}
-                  style={[ui.chip, estado === e && ui.chipActivo]}
-                >
-                  <Text
-                    style={[
-                      ui.etiqueta,
-                      estado === e && { color: colores.blanco },
-                    ]}
-                  >
-                    {e === "activa" ? "En vivo" : "Próximamente"}
-                  </Text>
-                </Pressable>
-              ))}
             </View>
             <Text style={ui.secundario}>
               {ubicacion
