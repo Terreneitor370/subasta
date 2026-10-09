@@ -98,7 +98,10 @@ Stack.Protected = ({ guard, children }) =>
 const Tabs = ({ children }) => e("Tabs", null, children);
 Tabs.Screen = (p) => e("TabScreen", p);
 const router = Object.fromEntries(
-  ["push", "navigate", "replace"].map((m) => [m, (p) => routes.push([m, p])]),
+  ["push", "navigate", "replace", "back"].map((m) => [
+    m,
+    (p) => routes.push([m, p]),
+  ]),
 );
 const supabase = {
   auth: {
@@ -126,6 +129,7 @@ const supabase = {
       "order",
       "limit",
       "update",
+      "insert",
       "maybeSingle",
     ])
       chain[method] = (...args) => {
@@ -280,7 +284,7 @@ const lacks = (s) =>
 const button = (s) => {
   const b = tree.root
     .findAllByType("Pressable")
-    .find((n) => text(n).includes(s));
+    .find((n) => text(n).includes(s) || n.props.accessibilityLabel === s || n.props.accessibilityLabel?.startsWith(s + " "));
   assert.ok(b, `No se encuentra botón ${s}`);
   return b;
 };
@@ -356,6 +360,32 @@ async function authReady(reg = false) {
   if (reg) await fill("Confirmar contraseña", "secreto123");
 }
 async function run() {
+  const { enteroPositivo, validarNuevaSubasta, idDesdeQR } = require(path.join(project, "src/lib/validacion.ts"));
+  await test("Importes: rechaza decimales, exponentes, negativos y desbordamientos", async () => {
+    for (const value of ["", "0", "-1", "1.5", "1e3", "0x10", "Infinity", "2147483648", "999999999999999999"]) assert.equal(enteroPositivo(value), null);
+    assert.equal(enteroPositivo(" 100 "), 100);
+    assert.equal(enteroPositivo("2147483647"), 2147483647);
+  });
+  await test("Nueva subasta: valida duración, nombre y siguiente oferta", async () => {
+    const datos = { nombre: "Audífonos", descripcion: "", precio: "100", incremento: "10", minutos: "7200" };
+    assert.deepEqual(validarNuevaSubasta(datos), {});
+    for (const minutos of ["0", "7201", "1.5", "1e2"]) assert.ok(validarNuevaSubasta({...datos, minutos}).minutos);
+    assert.ok(validarNuevaSubasta({...datos, nombre: "  "}).nombre);
+    assert.ok(validarNuevaSubasta({...datos, descripcion: "a".repeat(2001)}).descripcion);
+    assert.ok(validarNuevaSubasta({...datos, precio: "2147483647"}).incremento);
+  });
+  await test("QR: acepta rutas de subasta y rechaza texto ajeno", async () => {
+    assert.equal(idDesdeQR(pid), pid);
+    assert.equal(idDesdeQR(`subasta://subasta/${pid}`), pid);
+    assert.equal(idDesdeQR(`https://ejemplo.test/subasta/${pid}`), pid);
+    for (const value of ["otro código", `texto ${pid}`, `https://ejemplo.test/perfil/${pid}`, `javascript:${pid}`]) assert.equal(idDesdeQR(value), null);
+  });
+  await test("Nueva subasta: formulario inválido no envía una publicación", async () => {
+    await mount(NuevaSubasta);
+    await press("Publicar subasta");
+    has("Escribe un nombre de 2 a 120 caracteres.");
+    assert.equal(dbCalls.filter(call => call[0] === "insert").length, 0);
+  });
   await test("Nueva subasta: publicar permanece fuera del contenido desplazable", async () => {
     await mount(NuevaSubasta);
     const scroll = tree.root.findByType("ScrollView");

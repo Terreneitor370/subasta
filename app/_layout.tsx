@@ -62,8 +62,8 @@ function Navegacion() {
         headerTintColor: colores.texto,
         headerTitleStyle: {
           fontFamily: tipografia.editorial,
-          fontWeight: "400",
-          fontSize: 22,
+          fontWeight: "700",
+          fontSize: 20,
         },
         headerShadowVisible: false,
         contentStyle: { backgroundColor: colores.fondo },

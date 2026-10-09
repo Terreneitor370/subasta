@@ -3,7 +3,7 @@ import { VistaConTeclado } from "../../src/components/VistaConTeclado";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Alert,
   Linking,
@@ -18,16 +18,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useCampoVisible } from "../../src/hooks/useCampoVisible";
 import { subirFotoProducto } from "../../src/features/admin/subirFoto";
 import { obtenerUbicacion } from "../../src/hooks/useUbicacion";
-import { useSesion } from "../../src/lib/sesion";
+import { usePerfilActual } from "../../src/components/usePerfilActual";
+import { Icono } from "../../src/components/Icono";
+import { Boton } from "../../src/components/Ui";
+import {
+  validarNuevaSubasta,
+  type DatosNuevaSubasta,
+} from "../../src/lib/validacion";
 import { supabase } from "../../src/lib/supabase";
-import { colores, ui } from "../../src/lib/ui";
-
-const DURACION_MAXIMA_MINUTOS = 5 * 24 * 60;
+import { colores, mensajeError, ui } from "../../src/lib/ui";
 
 export default function NuevaSubasta() {
   const campos = useCampoVisible();
 
-  const { usuario } = useSesion();
+  const { usuario } = usePerfilActual();
   const [permiso, pedirPermiso] = useCameraPermissions();
   const camara = useRef<CameraView>(null);
   const [mostrarCamara, setMostrarCamara] = useState(false);
@@ -38,42 +42,83 @@ export default function NuevaSubasta() {
   const [incremento, setIncremento] = useState("10");
   const [minutos, setMinutos] = useState("60");
   const [guardando, setGuardando] = useState(false);
+  const ocupado = useRef(false);
+  const [tomando, setTomando] = useState(false);
+  const capturando = useRef(false);
+  const [errores, setErrores] = useState<
+    Partial<Record<keyof DatosNuevaSubasta, string>>
+  >({});
+  const entradas = useRef<
+    Partial<Record<keyof DatosNuevaSubasta, TextInput | null>>
+  >({});
+  const errorCampo = (campo: keyof DatosNuevaSubasta) =>
+    errores[campo] ? (
+      <Text style={ui.error} accessibilityRole="alert">
+        {errores[campo]}
+      </Text>
+    ) : null;
 
-  useEffect(() => {
-    if (mostrarCamara && permiso && !permiso.granted && permiso.canAskAgain) {
-      pedirPermiso();
+  const abrirCamara = async () => {
+    try {
+      if (!permiso?.granted && permiso?.canAskAgain !== false)
+        await pedirPermiso();
+      setMostrarCamara(true);
+    } catch {
+      Alert.alert(
+        "Cámara no disponible",
+        "No pudimos solicitar el permiso. Vuelve a intentarlo.",
+      );
     }
-  }, [mostrarCamara, permiso]);
+  };
 
   const tomarFoto = async () => {
-    const r = await camara.current?.takePictureAsync({ quality: 0.6 });
-    if (r) setFoto(r.uri);
-    setMostrarCamara(false);
+    if (capturando.current) return;
+    capturando.current = true;
+    setTomando(true);
+    try {
+      const r = await camara.current?.takePictureAsync({ quality: 0.6 });
+      if (!r) throw new Error("La cámara todavía no está lista.");
+      setFoto(r.uri);
+      setMostrarCamara(false);
+    } catch (e) {
+      Alert.alert("No pudimos tomar la foto", mensajeError(e));
+    } finally {
+      capturando.current = false;
+      setTomando(false);
+    }
   };
 
   const guardar = async () => {
-    if (!nombre || !precio)
+    if (ocupado.current) return;
+    const fallos = validarNuevaSubasta({
+      nombre,
+      descripcion,
+      precio,
+      incremento,
+      minutos,
+    });
+    setErrores(fallos);
+    const primerError = Object.keys(fallos)[0] as
+      keyof DatosNuevaSubasta | undefined;
+    if (primerError) {
+      entradas.current[primerError]?.focus();
+      return;
+    }
+    if (!usuario || usuario.rol !== "admin")
       return Alert.alert(
-        "Faltan datos",
-        "Nombre y precio inicial son obligatorios.",
+        "Perfil no disponible",
+        "Espera a que cargue tu perfil de administrador e inténtalo de nuevo.",
       );
     const duracionMinutos = Number(minutos);
-
-    if (duracionMinutos > DURACION_MAXIMA_MINUTOS) {
-      return Alert.alert(
-        "Duracion invalida",
-        "La duracion maxima permitida es de 5 dias (7200 minutos).",
-      );
-    }
-
+    ocupado.current = true;
     setGuardando(true);
     try {
       const imagen_url = foto ? await subirFotoProducto(foto) : null;
       const ubic = await obtenerUbicacion();
       const ahora = new Date();
       const { error } = await supabase.from("productos").insert({
-        nombre,
-        descripcion,
+        nombre: nombre.trim(),
+        descripcion: descripcion.trim(),
         imagen_url,
         precio_inicial: Number(precio),
         precio_actual: Number(precio),
@@ -85,14 +130,15 @@ export default function NuevaSubasta() {
         estado: "activa",
         latitud: ubic?.latitud ?? null,
         longitud: ubic?.longitud ?? null,
-        creado_por: usuario?.id ?? null,
+        creado_por: usuario.id,
       });
       if (error) throw error;
       router.back();
     } catch (e) {
-      Alert.alert("Error", (e as Error).message);
+      Alert.alert("No pudimos publicar la subasta", mensajeError(e));
     } finally {
       setGuardando(false);
+      ocupado.current = false;
     }
   };
 
@@ -116,15 +162,49 @@ export default function NuevaSubasta() {
           </View>
         );
       }
-      return <View />;
+      return (
+        <View style={[ui.pantalla, { justifyContent: "center", gap: 16 }]}>
+          <Text style={ui.texto}>
+            Necesitamos permiso de cámara para tomar la foto.
+          </Text>
+          <Boton
+            titulo="Dar permiso"
+            onPress={() => {
+              void pedirPermiso().catch(() =>
+                Alert.alert("Error", "No pudimos abrir la cámara."),
+              );
+            }}
+          />
+          <Boton
+            titulo="Volver al formulario"
+            secundario
+            onPress={() => setMostrarCamara(false)}
+          />
+        </View>
+      );
     }
     return (
-      <View style={{ flex: 1 }}>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: colores.fondo }}
+      >
         <CameraView ref={camara} style={{ flex: 1 }} facing="back" />
-        <Pressable style={[ui.boton, { margin: 16 }]} onPress={tomarFoto}>
-          <Text style={ui.botonTexto}>Tomar foto</Text>
-        </Pressable>
-      </View>
+        <View style={{ padding: 16, gap: 8 }}>
+          <Boton
+            titulo="Tomar foto"
+            cargando={tomando}
+            onPress={() => {
+              void tomarFoto();
+            }}
+          />
+          <Boton
+            titulo="Cancelar"
+            secundario
+            disabled={tomando}
+            onPress={() => setMostrarCamara(false)}
+          />
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -135,6 +215,8 @@ export default function NuevaSubasta() {
     >
       <VistaConTeclado>
         <ScrollView
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
           ref={(vista) => {
             campos.ref.current = vista;
           }}
@@ -142,21 +224,37 @@ export default function NuevaSubasta() {
           scrollEventThrottle={16}
           onLayout={campos.revelarCampo}
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 20, paddingBottom: 32, gap: 10 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 8 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
           <Pressable
-            onPress={() => setMostrarCamara(true)}
-            style={[ui.tarjeta, { alignItems: "center" }]}
+            onPress={() => {
+              void abrirCamara();
+            }}
+            disabled={guardando}
+            accessibilityRole="button"
+            accessibilityLabel="Tomar foto del producto"
+            style={[
+              ui.tarjeta,
+              {
+                alignItems: "center",
+                backgroundColor: colores.suave,
+                minHeight: 96,
+                justifyContent: "center",
+              },
+            ]}
           >
             {foto ? (
               <Image
                 source={foto}
-                style={{ width: "100%", height: 180, borderRadius: 8 }}
+                style={{ width: "100%", height: 140, borderRadius: 8 }}
               />
             ) : (
-              <Text>Tomar foto del producto</Text>
+              <>
+                <Icono nombre="camara" size={28} />
+                <Text style={ui.etiqueta}>Tomar foto del producto</Text>
+              </>
             )}
           </Pressable>
           <Text style={{ fontWeight: "600", marginTop: 6 }}>
@@ -164,15 +262,28 @@ export default function NuevaSubasta() {
           </Text>
           <TextInput
             onFocus={campos.revelarCampo}
+            accessibilityLabel="Nombre del producto"
+            ref={(entrada) => {
+              entradas.current.nombre = entrada;
+            }}
+            editable={!guardando}
+            maxLength={120}
             style={ui.input}
             placeholder="Ej. Audifonos inalambricos"
             placeholderTextColor={colores.gris}
             value={nombre}
             onChangeText={setNombre}
           />
-          <Text style={{ fontWeight: "600", marginTop: 6 }}>Descripcion</Text>
+          {errorCampo("nombre")}
+          <Text style={ui.etiqueta}>Descripción</Text>
           <TextInput
             onFocus={campos.revelarCampo}
+            accessibilityLabel="Descripción del producto"
+            ref={(entrada) => {
+              entradas.current.descripcion = entrada;
+            }}
+            editable={!guardando}
+            maxLength={2000}
             onContentSizeChange={campos.revelarCampo}
             style={[ui.input, { maxHeight: 140, textAlignVertical: "top" }]}
             placeholder="Estado, color, caracteristicas..."
@@ -181,6 +292,7 @@ export default function NuevaSubasta() {
             onChangeText={setDescripcion}
             multiline
           />
+          {errorCampo("descripcion")}
           <Text style={{ fontWeight: "600", marginTop: 6 }}>
             Precio inicial (creditos)
           </Text>
@@ -189,6 +301,12 @@ export default function NuevaSubasta() {
           </Text>
           <TextInput
             onFocus={campos.revelarCampo}
+            accessibilityLabel="Precio inicial en créditos"
+            ref={(entrada) => {
+              entradas.current.precio = entrada;
+            }}
+            editable={!guardando}
+            maxLength={10}
             style={ui.input}
             placeholder="Ej. 100"
             placeholderTextColor={colores.gris}
@@ -196,6 +314,7 @@ export default function NuevaSubasta() {
             value={precio}
             onChangeText={setPrecio}
           />
+          {errorCampo("precio")}
           <Text style={{ fontWeight: "600", marginTop: 6 }}>
             Incremento minimo
           </Text>
@@ -205,6 +324,12 @@ export default function NuevaSubasta() {
           </Text>
           <TextInput
             onFocus={campos.revelarCampo}
+            accessibilityLabel="Incremento mínimo en créditos"
+            ref={(entrada) => {
+              entradas.current.incremento = entrada;
+            }}
+            editable={!guardando}
+            maxLength={10}
             style={ui.input}
             placeholder="Ej. 10"
             placeholderTextColor={colores.gris}
@@ -212,6 +337,7 @@ export default function NuevaSubasta() {
             value={incremento}
             onChangeText={setIncremento}
           />
+          {errorCampo("incremento")}
           <Text style={{ fontWeight: "600", marginTop: 6 }}>
             Duracion (minutos)
           </Text>
@@ -221,6 +347,12 @@ export default function NuevaSubasta() {
           </Text>
           <TextInput
             onFocus={campos.revelarCampo}
+            accessibilityLabel="Duración en minutos"
+            ref={(entrada) => {
+              entradas.current.minutos = entrada;
+            }}
+            editable={!guardando}
+            maxLength={4}
             style={ui.input}
             placeholder="Ej. 60 (max 7200)"
             placeholderTextColor={colores.gris}
@@ -228,6 +360,7 @@ export default function NuevaSubasta() {
             value={minutos}
             onChangeText={setMinutos}
           />
+          {errorCampo("minutos")}
         </ScrollView>
         <View
           style={{

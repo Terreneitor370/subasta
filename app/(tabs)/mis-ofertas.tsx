@@ -1,4 +1,5 @@
-import { Encabezado } from "../../src/components/Editorial";
+import { Encabezado, ImagenProducto } from "../../src/components/Editorial";
+import { useState } from "react";
 import { useActualizarPantalla } from "../../src/components/useActualizarPantalla";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -8,6 +9,7 @@ import { Boton, Estado, Insignia } from "../../src/components/Ui";
 import { usePerfilActual } from "../../src/components/usePerfilActual";
 import { supabase } from "../../src/lib/supabase";
 import {
+  colores,
   etiquetasEstado,
   fecha,
   mensajeError,
@@ -17,6 +19,7 @@ import {
 import type { Oferta, Producto } from "../../src/types/database";
 // Consultas explícitas: los tipos iniciales aún no declaran Relationships.
 export default function MisOfertas() {
+  const [soloLiderando, setSoloLiderando] = useState(false);
   const { session } = usePerfilActual();
   const uid = session?.user.id;
   const consulta = useQuery({
@@ -45,9 +48,21 @@ export default function MisOfertas() {
   });
   useActualizarPantalla(consulta.refetch, !!uid);
   return (
-    <SafeAreaView edges={["bottom"]} style={ui.pantalla}>
+    <SafeAreaView edges={["top", "bottom"]} style={ui.pantalla}>
       <FlatList
-        data={consulta.isError ? [] : (consulta.data ?? [])}
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
+        data={
+          consulta.isError
+            ? []
+            : (consulta.data ?? []).filter(
+                (o) =>
+                  !soloLiderando ||
+                  (o.producto?.estado === "activa" &&
+                    o.producto?.lider_id === uid &&
+                    o.producto?.precio_actual === o.monto),
+              )
+        }
         keyExtractor={(o) => o.id}
         contentContainerStyle={ui.contenido}
         onRefresh={() => {
@@ -56,11 +71,31 @@ export default function MisOfertas() {
         refreshing={consulta.isRefetching}
         ListHeaderComponent={
           <View style={{ paddingBottom: 16 }}>
-            <Encabezado
-              ceja="TU ACTIVIDAD"
-              titulo="Cada oferta cuenta."
-              detalle="Revisa tus ofertas, sigue el precio actual y vuelve a participar."
-            />
+            <Encabezado ceja="TU ACTIVIDAD" titulo="Mis ofertas" />
+            <View style={ui.fila}>
+              {([false, true] as const).map((activo) => (
+                <Pressable
+                  key={String(activo)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: soloLiderando === activo }}
+                  style={[
+                    ui.chip,
+                    { flex: 1, alignItems: "center" },
+                    soloLiderando === activo && ui.chipActivo,
+                  ]}
+                  onPress={() => setSoloLiderando(activo)}
+                >
+                  <Text
+                    style={[
+                      ui.etiqueta,
+                      soloLiderando === activo && { color: colores.blanco },
+                    ]}
+                  >
+                    {activo ? "Liderando" : "Todas"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
         }
         ListEmptyComponent={
@@ -77,7 +112,11 @@ export default function MisOfertas() {
             />
           ) : (
             <Estado
-              titulo="Tu primera oferta te espera"
+              titulo={
+                soloLiderando
+                  ? "No estás liderando subastas"
+                  : "Tu primera oferta te espera"
+              }
               detalle="Explora un producto y participa en su subasta."
               accion="Explorar subastas"
               onPress={() => router.navigate("/(tabs)")}
@@ -117,6 +156,11 @@ export default function MisOfertas() {
               style={ui.tarjeta}
               onPress={() => router.push(`/subasta/${item.producto_id}`)}
             >
+              <ImagenProducto
+                uri={p?.imagen_url}
+                nombre={p?.nombre ?? "Producto"}
+                alto={160}
+              />
               <Insignia
                 texto={texto}
                 tono={lider && p?.estado !== "cancelada" ? "exito" : "normal"}

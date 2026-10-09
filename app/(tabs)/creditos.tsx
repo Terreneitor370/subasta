@@ -13,7 +13,7 @@ import {
 } from "../../src/features/creditos/comprarCreditos";
 import { usePerfilActual } from "../../src/components/usePerfilActual";
 import { supabase } from "../../src/lib/supabase";
-import { fecha, mensajeError, numero, ui } from "../../src/lib/ui";
+import { colores, fecha, mensajeError, numero, ui } from "../../src/lib/ui";
 const tipos = {
   compra: "Compra",
   reserva: "Reserva de oferta",
@@ -62,8 +62,10 @@ export default function Creditos() {
     }
   };
   return (
-    <SafeAreaView edges={["bottom"]} style={ui.pantalla}>
+    <SafeAreaView edges={["top", "bottom"]} style={ui.pantalla}>
       <ScrollView
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
         style={{ flex: 1 }}
         contentContainerStyle={ui.contenido}
         refreshControl={
@@ -75,32 +77,54 @@ export default function Creditos() {
           />
         }
       >
-        <Encabezado
-          ceja="TU CUENTA"
-          titulo="Saldo y movimientos."
-          detalle="Compra créditos y consulta cómo los utilizas en cada subasta."
-        />
+        <Encabezado ceja="TU CUENTA" titulo="Créditos" />
         <Saldo
           disponibles={usuario?.creditos}
           reservados={usuario?.creditos_reservados}
         />
-        <Text style={ui.subtitulo}>Elige tu paquete</Text>
-        <Text style={ui.texto}>
+        <Text
+          style={[
+            ui.texto,
+            {
+              backgroundColor: colores.suave,
+              padding: 12,
+              borderRadius: 8,
+              color: colores.primario,
+            },
+          ]}
+        >
           $1 MXN = 1 crédito. Por cada peso obtienes un crédito.
         </Text>
+        <Text style={ui.subtitulo}>Comprar créditos</Text>
         <Text style={ui.secundario}>
           Los créditos reservados se liberan si alguien supera tu oferta o la
           subasta se cancela.
         </Text>
-        {PAQUETES.map((p, i) => (
-          <View key={p.id} style={ui.tarjeta}>
-            <Text style={ui.ceja}>{["BÁSICO", "MEDIO", "PRO"][i]}</Text>
-            <Text style={ui.cifra}>
-              {numero(p.creditos)} <Text style={ui.secundario}>créditos</Text>
-            </Text>
-            <Text style={ui.texto}>${numero(p.precio)} MXN · modo prueba</Text>
+        {PAQUETES.map((p) => (
+          <View
+            key={p.id}
+            style={[
+              ui.tarjeta,
+              {
+                flexDirection: "row",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+              },
+            ]}
+          >
+            <View style={{ flex: 1, minWidth: 130, gap: 4 }}>
+              <Text style={ui.subtitulo}>
+                {numero(p.creditos)} <Text style={ui.secundario}>créditos</Text>
+              </Text>
+              <Text style={ui.texto}>
+                ${numero(p.precio)} MXN · modo prueba
+              </Text>
+            </View>
             <Boton
-              titulo={`Comprar ${p.creditos} créditos`}
+              titulo="Comprar"
+              accessibilityLabel={`Comprar ${p.creditos} créditos`}
               cargando={comprando === p.id}
               disabled={comprando !== null || !usuario}
               onPress={() => {

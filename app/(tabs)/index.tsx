@@ -95,8 +95,10 @@ export default function Subastas() {
     }
   };
   return (
-    <SafeAreaView edges={["bottom"]} style={ui.pantalla}>
+    <SafeAreaView edges={["top", "bottom"]} style={ui.pantalla}>
       <FlatList
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
         ref={(vista) => {
           campos.ref.current = vista;
         }}
@@ -116,11 +118,7 @@ export default function Subastas() {
             <Text style={ui.secundario}>
               Bienvenido, {usuario?.nombre?.trim().split(" ")[0] || "visitante"}
             </Text>
-            <Encabezado
-              ceja="EL CATÁLOGO"
-              titulo="Encuentra tu próxima pieza."
-              detalle="Explora los productos disponibles y participa en sus subastas."
-            />
+            <Encabezado ceja="EL CATÁLOGO" titulo="Subastas" />
             <TextInput
               onFocus={campos.revelarCampo}
               accessibilityLabel="Buscar subastas por nombre"
@@ -130,11 +128,13 @@ export default function Subastas() {
               value={busqueda}
               onChangeText={setBusqueda}
               clearButtonMode="while-editing"
+              maxLength={120}
             />
             <View style={ui.fila}>
               <View style={{ flex: 1 }}>
                 <Boton
                   titulo={ubicacion ? "Ver todas" : "Cercanas a mí"}
+                  icono="ofertas"
                   secundario
                   cargando={localizando}
                   onPress={cercanas}
@@ -143,6 +143,7 @@ export default function Subastas() {
               <View style={{ flex: 1 }}>
                 <Boton
                   titulo="Escanear QR"
+                  icono="qr"
                   secundario
                   onPress={() => router.push("/escanear")}
                 />
@@ -157,7 +158,12 @@ export default function Subastas() {
                   onPress={() => setEstado(e)}
                   style={[ui.chip, estado === e && ui.chipActivo]}
                 >
-                  <Text style={ui.etiqueta}>
+                  <Text
+                    style={[
+                      ui.etiqueta,
+                      estado === e && { color: colores.blanco },
+                    ]}
+                  >
                     {e === "activa" ? "En vivo" : "Próximamente"}
                   </Text>
                 </Pressable>
@@ -208,7 +214,10 @@ export default function Subastas() {
               nombre={item.nombre}
               alto={190}
             />
-            <Insignia texto={etiquetasEstado[item.estado]} />
+            <Insignia
+              texto={etiquetasEstado[item.estado]}
+              tono={item.estado === "activa" ? "exito" : "normal"}
+            />
             <Text style={ui.subtitulo}>{item.nombre}</Text>
             <Text style={ui.cifra}>
               {numero(item.precio_actual)}{" "}

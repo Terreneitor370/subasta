@@ -64,8 +64,10 @@ export default function Perfil() {
     if (n.producto_id) router.push(`/subasta/${n.producto_id}`);
   };
   return (
-    <SafeAreaView edges={["bottom"]} style={ui.pantalla}>
+    <SafeAreaView edges={["top", "bottom"]} style={ui.pantalla}>
       <FlatList
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
         data={consulta.isError ? [] : (consulta.data ?? [])}
         keyExtractor={(n) => n.id}
         contentContainerStyle={ui.contenido}
@@ -75,13 +77,13 @@ export default function Perfil() {
         refreshing={consulta.isRefetching}
         ListHeaderComponent={
           <View style={{ gap: 16, paddingBottom: 16 }}>
-            <Encabezado ceja="ÁREA PERSONAL" titulo="Mi perfil." />
-            <View style={ui.hero}>
+            <Encabezado ceja="ÁREA PERSONAL" titulo="Perfil" />
+            <View style={[ui.fila, { alignItems: "center", gap: 16 }]}>
               <View
                 style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 6,
+                  width: 72,
+                  height: 72,
+                  borderRadius: 36,
                   backgroundColor: colores.suave,
                   alignItems: "center",
                   justifyContent: "center",
@@ -91,12 +93,15 @@ export default function Perfil() {
                   {usuario?.nombre?.trim().charAt(0).toUpperCase() ?? "●"}
                 </Text>
               </View>
-              <Text style={ui.heroTitulo}>
-                {usuario?.nombre ?? "Mi perfil"}
-              </Text>
-              <Text style={ui.heroTexto}>
-                {usuario?.correo ?? session?.user.email}
-              </Text>
+              <View style={{ flex: 1, minWidth: 150, gap: 8 }}>
+                <Text style={ui.subtitulo}>
+                  {usuario?.nombre ?? "Mi perfil"}
+                </Text>
+                <Text style={ui.secundario}>
+                  {usuario?.correo ?? session?.user.email}
+                </Text>
+                {usuario?.rol === "admin" && <Insignia texto="Administrador" />}
+              </View>
             </View>
             {usuario?.rol === "admin" && (
               <Boton
@@ -126,7 +131,7 @@ export default function Perfil() {
                 )
               }
             />
-            <Text style={ui.subtitulo}>Tus avisos</Text>
+            <Text style={ui.subtitulo}>Avisos</Text>
             <Text style={ui.secundario}>
               Ofertas superadas, cierres y resultados. Toca un aviso para abrir
               su subasta.

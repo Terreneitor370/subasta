@@ -36,8 +36,10 @@ export default function Ganados() {
   });
   useActualizarPantalla(consulta.refetch, !!uid);
   return (
-    <SafeAreaView edges={["bottom"]} style={ui.pantalla}>
+    <SafeAreaView edges={["top", "bottom"]} style={ui.pantalla}>
       <FlatList
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
         data={consulta.isError ? [] : (consulta.data ?? [])}
         keyExtractor={(g) => g.id}
         contentContainerStyle={ui.contenido}
@@ -49,8 +51,8 @@ export default function Ganados() {
           <View style={{ paddingBottom: 16 }}>
             <Encabezado
               ceja="TU COLECCIÓN"
-              titulo="Tus victorias."
-              detalle="Productos adjudicados a tu cuenta al cierre de cada subasta."
+              titulo="Ganados"
+              detalle="Tus subastas adjudicadas."
             />
           </View>
         }
