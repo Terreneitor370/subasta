@@ -29,7 +29,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Se usa la camara para fotografiar productos y escanear codigos QR."
+          "cameraPermission": "Se usa la cámara para fotografiar productos."
         }
       ],
       [

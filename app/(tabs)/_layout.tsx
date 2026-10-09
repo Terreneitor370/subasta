@@ -1,17 +1,18 @@
 import { Tabs } from "expo-router";
-import { Text } from "react-native";
+import { Icono } from "../../src/components/Icono";
 import { colores, tipografia } from "../../src/lib/ui";
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        headerShown: false,
         headerStyle: { backgroundColor: colores.fondo },
         headerTintColor: colores.texto,
         headerShadowVisible: false,
         headerTitleStyle: {
           fontFamily: tipografia.editorial,
-          fontWeight: "400",
-          fontSize: 22,
+          fontWeight: "700",
+          fontSize: 20,
         },
         tabBarActiveTintColor: colores.primario,
         tabBarInactiveTintColor: colores.gris,
@@ -28,11 +29,11 @@ export default function TabsLayout() {
     >
       {(
         [
-          ["index", "Subastas", "◈"],
-          ["mis-ofertas", "Mis ofertas", "↗"],
-          ["ganados", "Ganados", "★"],
-          ["creditos", "Créditos", "+"],
-          ["perfil", "Perfil", "●"],
+          ["index", "Subastas", "subastas"],
+          ["mis-ofertas", "Mis ofertas", "ofertas"],
+          ["ganados", "Ganados", "ganados"],
+          ["creditos", "Créditos", "creditos"],
+          ["perfil", "Perfil", "perfil"],
         ] as const
       ).map(([name, title, icono]) => (
         <Tabs.Screen
@@ -40,11 +41,7 @@ export default function TabsLayout() {
           name={name}
           options={{
             title,
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 24, color }} accessibilityElementsHidden>
-                {icono}
-              </Text>
-            ),
+            tabBarIcon: ({ color }) => <Icono nombre={icono} color={color} />,
           }}
         />
       ))}

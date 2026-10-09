@@ -1,4 +1,5 @@
 import { Encabezado, ImagenProducto } from "../../src/components/Editorial";
+import { useCampoVisible } from "../../src/hooks/useCampoVisible";
 import { useActualizarPantalla } from "../../src/components/useActualizarPantalla";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -31,18 +32,18 @@ import {
   ui,
 } from "../../src/lib/ui";
 export default function Subastas() {
+  const campos = useCampoVisible();
   const { usuario } = usePerfilActual();
   const [ubicacion, setUbicacion] = useState<Coordenadas | null>(null);
   const [localizando, setLocalizando] = useState(false);
   const [busqueda, setBusqueda] = useState("");
-  const [estado, setEstado] = useState<"activa" | "programada">("activa");
   const consulta = useQuery({
-    queryKey: ["subastas", estado],
+    queryKey: ["subastas", "activa"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("productos")
         .select("*")
-        .eq("estado", estado)
+        .eq("estado", "activa")
         .order("fecha_fin", { ascending: true });
       if (error) throw error;
       return data;
@@ -93,8 +94,16 @@ export default function Subastas() {
     }
   };
   return (
-    <SafeAreaView edges={["bottom"]} style={ui.pantalla}>
+    <SafeAreaView edges={["top", "bottom"]} style={ui.pantalla}>
       <FlatList
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
+        ref={(vista) => {
+          campos.ref.current = vista;
+        }}
+        onScroll={campos.onScroll}
+        scrollEventThrottle={16}
+        onLayout={campos.revelarCampo}
         data={consulta.isError ? [] : lista}
         keyExtractor={(p) => p.id}
         onRefresh={() => {
@@ -108,12 +117,9 @@ export default function Subastas() {
             <Text style={ui.secundario}>
               Bienvenido, {usuario?.nombre?.trim().split(" ")[0] || "visitante"}
             </Text>
-            <Encabezado
-              ceja="EL CATÁLOGO"
-              titulo="Encuentra tu próxima pieza."
-              detalle="Explora los productos disponibles y participa en sus subastas."
-            />
+            <Encabezado ceja="EL CATÁLOGO" titulo="Subastas" />
             <TextInput
+              onFocus={campos.revelarCampo}
               accessibilityLabel="Buscar subastas por nombre"
               style={ui.input}
               placeholder="Buscar un producto…"
@@ -121,38 +127,18 @@ export default function Subastas() {
               value={busqueda}
               onChangeText={setBusqueda}
               clearButtonMode="while-editing"
+              maxLength={120}
             />
             <View style={ui.fila}>
               <View style={{ flex: 1 }}>
                 <Boton
                   titulo={ubicacion ? "Ver todas" : "Cercanas a mí"}
+                  icono="ofertas"
                   secundario
                   cargando={localizando}
                   onPress={cercanas}
                 />
               </View>
-              <View style={{ flex: 1 }}>
-                <Boton
-                  titulo="Escanear QR"
-                  secundario
-                  onPress={() => router.push("/escanear")}
-                />
-              </View>
-            </View>
-            <View style={ui.fila}>
-              {(["activa", "programada"] as const).map((e) => (
-                <Pressable
-                  key={e}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: estado === e }}
-                  onPress={() => setEstado(e)}
-                  style={[ui.chip, estado === e && ui.chipActivo]}
-                >
-                  <Text style={ui.etiqueta}>
-                    {e === "activa" ? "En vivo" : "Próximamente"}
-                  </Text>
-                </Pressable>
-              ))}
             </View>
             <Text style={ui.secundario}>
               {ubicacion
@@ -199,7 +185,10 @@ export default function Subastas() {
               nombre={item.nombre}
               alto={190}
             />
-            <Insignia texto={etiquetasEstado[item.estado]} />
+            <Insignia
+              texto={etiquetasEstado[item.estado]}
+              tono={item.estado === "activa" ? "exito" : "normal"}
+            />
             <Text style={ui.subtitulo}>{item.nombre}</Text>
             <Text style={ui.cifra}>
               {numero(item.precio_actual)}{" "}

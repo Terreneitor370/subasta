@@ -1,9 +1,14 @@
 import { Platform, StyleSheet } from "react-native";
 
-// Tipografías nativas: serif editorial en títulos; sans legible en controles.
+// Tipografía sans serif nativa para una interfaz formal y legible.
 // Funcionan sin descargar fuentes y sin cambiar el SDK de Expo.
 export const tipografia = {
-  editorial: Platform.OS === "android" ? "serif" : "Georgia",
+  editorial:
+    Platform.OS === "android"
+      ? "sans-serif"
+      : Platform.OS === "ios"
+        ? "System"
+        : "Arial",
   interfaz:
     Platform.OS === "android"
       ? "sans-serif"
@@ -12,20 +17,20 @@ export const tipografia = {
         : "Arial",
 };
 export const colores = {
-  primario: "#9F3F27",
-  texto: "#252D29",
-  gris: "#646960",
-  borde: "#D8D1C5",
-  exito: "#316348",
-  alerta: "#AC2638",
-  fondo: "#F5F2EC",
-  blanco: "#FFFDFA",
-  suave: "#EEE5D9",
-  oscuro: "#202D27",
-  aviso: "#795919",
+  primario: "#2457D6",
+  texto: "#142B49",
+  gris: "#536477",
+  borde: "#DCE3ED",
+  exito: "#168344",
+  alerta: "#C6283B",
+  fondo: "#FFFFFF",
+  blanco: "#FFFFFF",
+  suave: "#F3F5F8",
+  oscuro: "#142B49",
+  aviso: "#A45D08",
 };
 export const ui = StyleSheet.create({
-  pantalla: { flex: 1, backgroundColor: colores.fondo, padding: 20 },
+  pantalla: { flex: 1, backgroundColor: colores.fondo, padding: 16 },
   contenido: { gap: 16, paddingBottom: 32 },
   fila: {
     flexDirection: "row",
@@ -35,18 +40,18 @@ export const ui = StyleSheet.create({
   },
   titulo: {
     fontFamily: tipografia.editorial,
-    fontSize: 32,
-    fontWeight: "400",
+    fontSize: 26,
+    fontWeight: "700",
     color: colores.texto,
-    letterSpacing: -0.8,
-    lineHeight: 38,
+    letterSpacing: 0,
+    lineHeight: 34,
   },
   subtitulo: {
     fontFamily: tipografia.editorial,
-    fontSize: 23,
-    fontWeight: "400",
+    fontSize: 18,
+    fontWeight: "700",
     color: colores.texto,
-    lineHeight: 29,
+    lineHeight: 26,
   },
   texto: {
     fontFamily: tipografia.interfaz,
@@ -71,7 +76,7 @@ export const ui = StyleSheet.create({
     fontFamily: tipografia.interfaz,
     fontSize: 11,
     fontWeight: "600",
-    letterSpacing: 2,
+    letterSpacing: 0.5,
     textTransform: "uppercase",
     color: colores.primario,
   },
@@ -82,13 +87,16 @@ export const ui = StyleSheet.create({
     marginBottom: 4,
   },
   input: {
-    minHeight: 52,
+    minHeight: 56,
     borderWidth: 1,
     borderColor: colores.borde,
-    borderRadius: 6,
-    padding: 14,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontFamily: tipografia.interfaz,
     fontSize: 16,
+    lineHeight: 24,
+    includeFontPadding: true,
     color: colores.texto,
     backgroundColor: colores.blanco,
   },
@@ -96,7 +104,7 @@ export const ui = StyleSheet.create({
     minHeight: 50,
     backgroundColor: colores.primario,
     padding: 14,
-    borderRadius: 6,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -111,7 +119,7 @@ export const ui = StyleSheet.create({
   botonSecundario: {
     minHeight: 50,
     padding: 14,
-    borderRadius: 6,
+    borderRadius: 8,
     backgroundColor: colores.suave,
     alignItems: "center",
     justifyContent: "center",
@@ -128,7 +136,7 @@ export const ui = StyleSheet.create({
   deshabilitado: { opacity: 0.5 },
   tarjeta: {
     backgroundColor: colores.blanco,
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 18,
     borderWidth: 1,
     borderColor: colores.borde,
@@ -136,30 +144,34 @@ export const ui = StyleSheet.create({
   },
   hero: {
     backgroundColor: colores.oscuro,
-    borderRadius: 10,
-    padding: 24,
+    borderRadius: 8,
+    padding: 20,
     gap: 12,
   },
   heroTitulo: {
     fontFamily: tipografia.editorial,
-    fontSize: 34,
-    fontWeight: "400",
+    fontSize: 32,
+    fontWeight: "700",
     color: colores.blanco,
-    letterSpacing: -0.7,
-    lineHeight: 40,
+    letterSpacing: 0,
+    lineHeight: 42,
+    includeFontPadding: true,
   },
   heroTexto: {
     fontFamily: tipografia.interfaz,
     fontSize: 13,
-    color: "#DADFCF",
+    color: "#DDE7F5",
     lineHeight: 21,
   },
   cifra: {
     fontFamily: tipografia.editorial,
-    fontSize: 36,
-    fontWeight: "400",
+    fontSize: 28,
+    fontWeight: "700",
     color: colores.texto,
-    letterSpacing: -0.6,
+    letterSpacing: 0,
+    lineHeight: 38,
+    includeFontPadding: true,
+    paddingVertical: 2,
     fontVariant: ["tabular-nums"],
   },
   chip: {
@@ -172,7 +184,10 @@ export const ui = StyleSheet.create({
     borderWidth: 1,
     borderColor: colores.borde,
   },
-  chipActivo: { backgroundColor: colores.suave, borderColor: colores.primario },
+  chipActivo: {
+    backgroundColor: colores.primario,
+    borderColor: colores.primario,
+  },
   error: {
     fontFamily: tipografia.interfaz,
     color: colores.alerta,

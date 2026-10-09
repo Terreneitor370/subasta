@@ -1,13 +1,12 @@
+import { VistaConTeclado } from "../../src/components/VistaConTeclado";
 // Integrante 5 (formulario) + Integrante 4 (CAMARA para la foto, GPS para la ubicacion)
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
   Linking,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -15,16 +14,28 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { useCampoVisible } from "../../src/hooks/useCampoVisible";
 import { subirFotoProducto } from "../../src/features/admin/subirFoto";
 import { obtenerUbicacion } from "../../src/hooks/useUbicacion";
-import { useSesion } from "../../src/lib/sesion";
+import { usePerfilActual } from "../../src/components/usePerfilActual";
+import { Icono } from "../../src/components/Icono";
+import { Boton } from "../../src/components/Ui";
+import {
+  validarNuevaSubasta,
+  type DatosNuevaSubasta,
+} from "../../src/lib/validacion";
 import { supabase } from "../../src/lib/supabase";
-import { colores, ui } from "../../src/lib/ui";
+import { colores, mensajeError, ui } from "../../src/lib/ui";
 
 const DURACION_MAXIMA_MINUTOS = 5 * 24 * 60;
+const DURACION_MINIMA_MINUTOS = 1;
+const MINUTOS_POR_HORA = 60;
 
 export default function NuevaSubasta() {
-  const { usuario } = useSesion();
+  const campos = useCampoVisible();
+
+  const { usuario } = usePerfilActual();
   const [permiso, pedirPermiso] = useCameraPermissions();
   const camara = useRef<CameraView>(null);
   const [mostrarCamara, setMostrarCamara] = useState(false);
@@ -33,63 +44,117 @@ export default function NuevaSubasta() {
   const [descripcion, setDescripcion] = useState("");
   const [precio, setPrecio] = useState("");
   const [incremento, setIncremento] = useState("10");
-  const [minutos, setMinutos] = useState("60");
+  const [duracionHoras, setDuracionHoras] = useState(1);
+  const [duracionMinutos, setDuracionMinutos] = useState(0);
   const [guardando, setGuardando] = useState(false);
+  const ocupado = useRef(false);
+  const [tomando, setTomando] = useState(false);
+  const capturando = useRef(false);
+  const minutosTotales = duracionHoras * MINUTOS_POR_HORA + duracionMinutos;
+  const minutos = String(minutosTotales);
+  const [errores, setErrores] = useState<
+    Partial<Record<keyof DatosNuevaSubasta, string>>
+  >({});
+  const entradas = useRef<
+    Partial<Record<keyof DatosNuevaSubasta, TextInput | null>>
+  >({});
+  const errorCampo = (campo: keyof DatosNuevaSubasta) =>
+    errores[campo] ? (
+      <Text style={ui.error} accessibilityRole="alert">
+        {errores[campo]}
+      </Text>
+    ) : null;
 
-  useEffect(() => {
-    if (mostrarCamara && permiso && !permiso.granted && permiso.canAskAgain) {
-      pedirPermiso();
+  const ajustarDuracion = (deltaMinutos: number) => {
+    const proximaDuracion = Math.min(
+      DURACION_MAXIMA_MINUTOS,
+      Math.max(DURACION_MINIMA_MINUTOS, minutosTotales + deltaMinutos),
+    );
+
+    setDuracionHoras(Math.floor(proximaDuracion / MINUTOS_POR_HORA));
+    setDuracionMinutos(proximaDuracion % MINUTOS_POR_HORA);
+  };
+
+  const abrirCamara = async () => {
+    try {
+      if (!permiso?.granted && permiso?.canAskAgain !== false)
+        await pedirPermiso();
+      setMostrarCamara(true);
+    } catch {
+      Alert.alert(
+        "Cámara no disponible",
+        "No pudimos solicitar el permiso. Vuelve a intentarlo.",
+      );
     }
-  }, [mostrarCamara, permiso]);
+  };
 
   const tomarFoto = async () => {
-    const r = await camara.current?.takePictureAsync({ quality: 0.6 });
-    if (r) setFoto(r.uri);
-    setMostrarCamara(false);
+    if (capturando.current) return;
+    capturando.current = true;
+    setTomando(true);
+    try {
+      const r = await camara.current?.takePictureAsync({ quality: 0.6 });
+      if (!r) throw new Error("La cámara todavía no está lista.");
+      setFoto(r.uri);
+      setMostrarCamara(false);
+    } catch (e) {
+      Alert.alert("No pudimos tomar la foto", mensajeError(e));
+    } finally {
+      capturando.current = false;
+      setTomando(false);
+    }
   };
 
   const guardar = async () => {
-    if (!nombre || !precio)
-      return Alert.alert(
-        "Faltan datos",
-        "Nombre y precio inicial son obligatorios.",
-      );
-    const duracionMinutos = Number(minutos);
-
-    if (duracionMinutos > DURACION_MAXIMA_MINUTOS) {
-      return Alert.alert(
-        "Duracion invalida",
-        "La duracion maxima permitida es de 5 dias (7200 minutos).",
-      );
+    if (ocupado.current) return;
+    const fallos = validarNuevaSubasta({
+      nombre,
+      descripcion,
+      precio,
+      incremento,
+      minutos,
+    });
+    setErrores(fallos);
+    const primerError = Object.keys(fallos)[0] as
+      keyof DatosNuevaSubasta | undefined;
+    if (primerError) {
+      entradas.current[primerError]?.focus();
+      return;
     }
-
+    if (!usuario || usuario.rol !== "admin")
+      return Alert.alert(
+        "Perfil no disponible",
+        "Espera a que cargue tu perfil de administrador e inténtalo de nuevo.",
+      );
+    ocupado.current = true;
     setGuardando(true);
     try {
       const imagen_url = foto ? await subirFotoProducto(foto) : null;
       const ubic = await obtenerUbicacion();
       const ahora = new Date();
       const { error } = await supabase.from("productos").insert({
-        nombre,
-        descripcion,
+        nombre: nombre.trim(),
+        descripcion: descripcion.trim(),
         imagen_url,
         precio_inicial: Number(precio),
         precio_actual: Number(precio),
         incremento_minimo: Number(incremento),
         fecha_inicio: ahora.toISOString(),
         fecha_fin: new Date(
-          ahora.getTime() + duracionMinutos * 60_000,
+          ahora.getTime() + minutosTotales * 60_000,
         ).toISOString(),
         estado: "activa",
         latitud: ubic?.latitud ?? null,
         longitud: ubic?.longitud ?? null,
-        creado_por: usuario?.id ?? null,
+        creado_por: usuario.id,
       });
       if (error) throw error;
       router.back();
     } catch (e) {
-      Alert.alert("Error", (e as Error).message);
+      Alert.alert("No pudimos publicar la subasta", mensajeError(e));
     } finally {
       setGuardando(false);
+      ocupado.current = false;
     }
   };
 
@@ -113,15 +178,49 @@ export default function NuevaSubasta() {
           </View>
         );
       }
-      return <View />;
+      return (
+        <View style={[ui.pantalla, { justifyContent: "center", gap: 16 }]}>
+          <Text style={ui.texto}>
+            Necesitamos permiso de cámara para tomar la foto.
+          </Text>
+          <Boton
+            titulo="Dar permiso"
+            onPress={() => {
+              void pedirPermiso().catch(() =>
+                Alert.alert("Error", "No pudimos abrir la cámara."),
+              );
+            }}
+          />
+          <Boton
+            titulo="Volver al formulario"
+            secundario
+            onPress={() => setMostrarCamara(false)}
+          />
+        </View>
+      );
     }
     return (
-      <View style={{ flex: 1 }}>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: colores.fondo }}
+      >
         <CameraView ref={camara} style={{ flex: 1 }} facing="back" />
-        <Pressable style={[ui.boton, { margin: 16 }]} onPress={tomarFoto}>
-          <Text style={ui.botonTexto}>Tomar foto</Text>
-        </Pressable>
-      </View>
+        <View style={{ padding: 16, gap: 8 }}>
+          <Boton
+            titulo="Tomar foto"
+            cargando={tomando}
+            onPress={() => {
+              void tomarFoto();
+            }}
+          />
+          <Boton
+            titulo="Cancelar"
+            secundario
+            disabled={tomando}
+            onPress={() => setMostrarCamara(false)}
+          />
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -130,48 +229,86 @@ export default function NuevaSubasta() {
       edges={["bottom"]}
       style={{ flex: 1, backgroundColor: colores.fondo }}
     >
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <VistaConTeclado>
         <ScrollView
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+          ref={(vista) => {
+            campos.ref.current = vista;
+          }}
+          onScroll={campos.onScroll}
+          scrollEventThrottle={16}
+          onLayout={campos.revelarCampo}
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 20, paddingBottom: 32, gap: 10 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 8 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
           <Pressable
-            onPress={() => setMostrarCamara(true)}
-            style={[ui.tarjeta, { alignItems: "center" }]}
+            onPress={() => {
+              void abrirCamara();
+            }}
+            disabled={guardando}
+            accessibilityRole="button"
+            accessibilityLabel="Tomar foto del producto"
+            style={[
+              ui.tarjeta,
+              {
+                alignItems: "center",
+                backgroundColor: colores.suave,
+                minHeight: 96,
+                justifyContent: "center",
+              },
+            ]}
           >
             {foto ? (
               <Image
                 source={foto}
-                style={{ width: "100%", height: 180, borderRadius: 8 }}
+                style={{ width: "100%", height: 140, borderRadius: 8 }}
               />
             ) : (
-              <Text>Tomar foto del producto</Text>
+              <>
+                <Icono nombre="camara" size={28} />
+                <Text style={ui.etiqueta}>Tomar foto del producto</Text>
+              </>
             )}
           </Pressable>
           <Text style={{ fontWeight: "600", marginTop: 6 }}>
             Nombre del producto
           </Text>
           <TextInput
+            onFocus={campos.revelarCampo}
+            accessibilityLabel="Nombre del producto"
+            ref={(entrada) => {
+              entradas.current.nombre = entrada;
+            }}
+            editable={!guardando}
+            maxLength={120}
             style={ui.input}
             placeholder="Ej. Audifonos inalambricos"
             placeholderTextColor={colores.gris}
             value={nombre}
             onChangeText={setNombre}
           />
-          <Text style={{ fontWeight: "600", marginTop: 6 }}>Descripcion</Text>
+          {errorCampo("nombre")}
+          <Text style={ui.etiqueta}>Descripción</Text>
           <TextInput
-            style={ui.input}
+            onFocus={campos.revelarCampo}
+            accessibilityLabel="Descripción del producto"
+            ref={(entrada) => {
+              entradas.current.descripcion = entrada;
+            }}
+            editable={!guardando}
+            maxLength={2000}
+            onContentSizeChange={campos.revelarCampo}
+            style={[ui.input, { maxHeight: 140, textAlignVertical: "top" }]}
             placeholder="Estado, color, caracteristicas..."
             placeholderTextColor={colores.gris}
             value={descripcion}
             onChangeText={setDescripcion}
             multiline
           />
+          {errorCampo("descripcion")}
           <Text style={{ fontWeight: "600", marginTop: 6 }}>
             Precio inicial (creditos)
           </Text>
@@ -179,6 +316,13 @@ export default function NuevaSubasta() {
             Cuanto vale el producto al empezar la subasta. Ej: 100
           </Text>
           <TextInput
+            onFocus={campos.revelarCampo}
+            accessibilityLabel="Precio inicial en créditos"
+            ref={(entrada) => {
+              entradas.current.precio = entrada;
+            }}
+            editable={!guardando}
+            maxLength={10}
             style={ui.input}
             placeholder="Ej. 100"
             placeholderTextColor={colores.gris}
@@ -186,6 +330,7 @@ export default function NuevaSubasta() {
             value={precio}
             onChangeText={setPrecio}
           />
+          {errorCampo("precio")}
           <Text style={{ fontWeight: "600", marginTop: 6 }}>
             Incremento minimo
           </Text>
@@ -194,6 +339,13 @@ export default function NuevaSubasta() {
             110, 120...).
           </Text>
           <TextInput
+            onFocus={campos.revelarCampo}
+            accessibilityLabel="Incremento mínimo en créditos"
+            ref={(entrada) => {
+              entradas.current.incremento = entrada;
+            }}
+            editable={!guardando}
+            maxLength={10}
             style={ui.input}
             placeholder="Ej. 10"
             placeholderTextColor={colores.gris}
@@ -201,21 +353,154 @@ export default function NuevaSubasta() {
             value={incremento}
             onChangeText={setIncremento}
           />
+          {errorCampo("incremento")}
           <Text style={{ fontWeight: "600", marginTop: 6 }}>
-            Duracion (minutos)
+            Duracion (horas y minutos)
           </Text>
           <Text style={ui.pista}>
-            Cuanto tiempo aceptara ofertas a partir de publicarse. Maximo: 5
-            dias (7200 minutos).
+            Selecciona cuanto tiempo aceptara ofertas a partir de publicarse.
+            Maximo: 5 dias.
           </Text>
-          <TextInput
-            style={ui.input}
-            placeholder="Ej. 60 (max 7200)"
-            placeholderTextColor={colores.gris}
-            keyboardType="number-pad"
-            value={minutos}
-            onChangeText={setMinutos}
-          />
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={ui.pista}>Horas</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Restar una hora"
+                  onPress={() => ajustarDuracion(-MINUTOS_POR_HORA)}
+                  disabled={
+                    guardando || minutosTotales <= DURACION_MINIMA_MINUTOS
+                  }
+                  style={({ pressed }) => [
+                    ui.botonSecundario,
+                    { minHeight: 52, minWidth: 44, paddingHorizontal: 0 },
+                    (pressed ||
+                      guardando ||
+                      minutosTotales <= DURACION_MINIMA_MINUTOS) &&
+                      ui.deshabilitado,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      ui.botonTexto,
+                      { color: colores.primario, fontSize: 20 },
+                    ]}
+                  >
+                    -
+                  </Text>
+                </Pressable>
+                <View
+                  style={[
+                    ui.input,
+                    {
+                      flex: 1,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    },
+                  ]}
+                >
+                  <Text style={ui.texto}>{duracionHoras}</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Sumar una hora"
+                  onPress={() => ajustarDuracion(MINUTOS_POR_HORA)}
+                  disabled={
+                    guardando || minutosTotales >= DURACION_MAXIMA_MINUTOS
+                  }
+                  style={({ pressed }) => [
+                    ui.botonSecundario,
+                    { minHeight: 52, minWidth: 44, paddingHorizontal: 0 },
+                    (pressed ||
+                      guardando ||
+                      minutosTotales >= DURACION_MAXIMA_MINUTOS) &&
+                      ui.deshabilitado,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      ui.botonTexto,
+                      { color: colores.primario, fontSize: 20 },
+                    ]}
+                  >
+                    +
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={ui.pista}>Minutos</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Restar un minuto"
+                  onPress={() => ajustarDuracion(-1)}
+                  disabled={
+                    guardando || minutosTotales <= DURACION_MINIMA_MINUTOS
+                  }
+                  style={({ pressed }) => [
+                    ui.botonSecundario,
+                    { minHeight: 52, minWidth: 44, paddingHorizontal: 0 },
+                    (pressed ||
+                      guardando ||
+                      minutosTotales <= DURACION_MINIMA_MINUTOS) &&
+                      ui.deshabilitado,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      ui.botonTexto,
+                      { color: colores.primario, fontSize: 20 },
+                    ]}
+                  >
+                    -
+                  </Text>
+                </Pressable>
+                <View
+                  style={[
+                    ui.input,
+                    {
+                      flex: 1,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    },
+                  ]}
+                >
+                  <Text style={ui.texto}>
+                    {duracionMinutos.toString().padStart(2, "0")}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Sumar un minuto"
+                  onPress={() => ajustarDuracion(1)}
+                  disabled={
+                    guardando || minutosTotales >= DURACION_MAXIMA_MINUTOS
+                  }
+                  style={({ pressed }) => [
+                    ui.botonSecundario,
+                    { minHeight: 52, minWidth: 44, paddingHorizontal: 0 },
+                    (pressed ||
+                      guardando ||
+                      minutosTotales >= DURACION_MAXIMA_MINUTOS) &&
+                      ui.deshabilitado,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      ui.botonTexto,
+                      { color: colores.primario, fontSize: 20 },
+                    ]}
+                  >
+                    +
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+          <Text style={ui.pista}>Duracion total: {minutosTotales} minutos.</Text>
+          {errorCampo("minutos")}
         </ScrollView>
         <View
           style={{
@@ -237,7 +522,7 @@ export default function NuevaSubasta() {
             </Text>
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </VistaConTeclado>
     </SafeAreaView>
   );
 }

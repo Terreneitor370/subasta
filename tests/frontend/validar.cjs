@@ -65,6 +65,7 @@ function FlatList(props) {
   );
 }
 const RN = {
+  Keyboard: { addListener: () => ({ remove: () => {} }) },
   ...Object.fromEntries(
     [
       "View",
@@ -78,8 +79,8 @@ const RN = {
     ].map((n) => [n, n]),
   ),
   FlatList,
-  Modal: ({ visible, children }) =>
-    visible ? e("Modal", null, children) : null,
+  Modal: ({ visible, children, ...props }) =>
+    visible ? e("Modal", props, children) : null,
   Platform: { OS: "ios" },
   StyleSheet: { create: (s) => s },
   AppState: {
@@ -97,7 +98,10 @@ Stack.Protected = ({ guard, children }) =>
 const Tabs = ({ children }) => e("Tabs", null, children);
 Tabs.Screen = (p) => e("TabScreen", p);
 const router = Object.fromEntries(
-  ["push", "navigate", "replace"].map((m) => [m, (p) => routes.push([m, p])]),
+  ["push", "navigate", "replace", "back"].map((m) => [
+    m,
+    (p) => routes.push([m, p]),
+  ]),
 );
 const supabase = {
   auth: {
@@ -125,6 +129,7 @@ const supabase = {
       "order",
       "limit",
       "update",
+      "insert",
       "maybeSingle",
     ])
       chain[method] = (...args) => {
@@ -279,7 +284,7 @@ const lacks = (s) =>
 const button = (s) => {
   const b = tree.root
     .findAllByType("Pressable")
-    .find((n) => text(n).includes(s));
+    .find((n) => text(n).includes(s) || n.props.accessibilityLabel === s || n.props.accessibilityLabel?.startsWith(s + " "));
   assert.ok(b, `No se encuentra botón ${s}`);
   return b;
 };
@@ -355,6 +360,26 @@ async function authReady(reg = false) {
   if (reg) await fill("Confirmar contraseña", "secreto123");
 }
 async function run() {
+  const { enteroPositivo, validarNuevaSubasta } = require(path.join(project, "src/lib/validacion.ts"));
+  await test("Importes: rechaza decimales, exponentes, negativos y desbordamientos", async () => {
+    for (const value of ["", "0", "-1", "1.5", "1e3", "0x10", "Infinity", "2147483648", "999999999999999999"]) assert.equal(enteroPositivo(value), null);
+    assert.equal(enteroPositivo(" 100 "), 100);
+    assert.equal(enteroPositivo("2147483647"), 2147483647);
+  });
+  await test("Nueva subasta: valida duración, nombre y siguiente oferta", async () => {
+    const datos = { nombre: "Audífonos", descripcion: "", precio: "100", incremento: "10", minutos: "7200" };
+    assert.deepEqual(validarNuevaSubasta(datos), {});
+    for (const minutos of ["0", "7201", "1.5", "1e2"]) assert.ok(validarNuevaSubasta({...datos, minutos}).minutos);
+    assert.ok(validarNuevaSubasta({...datos, nombre: "  "}).nombre);
+    assert.ok(validarNuevaSubasta({...datos, descripcion: "a".repeat(2001)}).descripcion);
+    assert.ok(validarNuevaSubasta({...datos, precio: "2147483647"}).incremento);
+  });
+  await test("Nueva subasta: formulario inválido no envía una publicación", async () => {
+    await mount(NuevaSubasta);
+    await press("Publicar subasta");
+    has("Escribe un nombre de 2 a 120 caracteres.");
+    assert.equal(dbCalls.filter(call => call[0] === "insert").length, 0);
+  });
   await test("Nueva subasta: publicar permanece fuera del contenido desplazable", async () => {
     await mount(NuevaSubasta);
     const scroll = tree.root.findByType("ScrollView");
@@ -377,12 +402,39 @@ async function run() {
       .findAllByType("Text")
       .map((node) => text(node).replace(/\s+/g, ""));
     for (const paquete of PAQUETES)
-      assert.ok(precios.includes(`$${paquete.precio}MXN·modoprueba`));
+      assert.ok(precios.includes(`$${paquete.precio}MXN`));
+    lacks("modo prueba");
+    lacks("Pagos de prueba");
+    lacks("4242");
   });
   await test("Imagen: producto sin foto conserva su presentación", async () => {
     await mount(ImagenProducto, { nombre: "Audífonos" });
     has("Imagen no disponible");
     assert.equal(tree.root.findAllByType("Image").length, 0);
+  });
+  await test("Foto: abre sin navegar, muestra imagen completa y limita el zoom", async () => {
+    await mount(ImagenProducto, {nombre: "Audífonos", uri: "https://example.test/foto.png"});
+    let detenido = false;
+    await act(async () => button("Ampliar foto de Audífonos").props.onPress({stopPropagation: () => { detenido = true; }}));
+    assert.ok(detenido);
+    assert.equal(tree.root.findAllByType("Image")[1].props.contentFit, "contain");
+    const ampliar = () => tree.root.findAllByType("Pressable").find(node => node.props.accessibilityLabel === "Ampliar foto");
+    for (let i = 0; i < 6; i++) await act(async () => ampliar().props.onPress());
+    has("400 %");
+    assert.equal(ampliar().props.disabled, true);
+    await press("Restablecer tamaño de foto");
+    has("100 %");
+    assert.equal(button("Reducir foto").props.disabled, true);
+    await act(async () => tree.root.findByType("Modal").props.onRequestClose());
+    assert.equal(tree.root.findAllByType("Modal").length, 0);
+  });
+  await test("Foto: un fallo en pantalla completa permite cerrar y volver a intentar", async () => {
+    await mount(ImagenProducto, {nombre: "Audífonos", uri: "https://example.test/foto.png"});
+    await act(async () => button("Ampliar foto de Audífonos").props.onPress({stopPropagation() {}}));
+    await act(async () => tree.root.findAllByType("Image")[1].props.onError());
+    has("No se pudo cargar la foto");
+    await press("Cerrar foto");
+    assert.equal(tree.root.findAllByType("Modal").length, 0);
   });
   await test("Imagen: URL rota muestra respaldo", async () => {
     await mount(ImagenProducto, {
@@ -545,10 +597,10 @@ async function run() {
     await fill("Buscar subastas por nombre", " AUDÍFONOS ");
     has("Audífonos");
   });
-  await test("Subastas: filtro próximas cambia clave de consulta", async () => {
+  await test("Subastas: catálogo consulta solo activas y no ofrece próximas", async () => {
     await mount(screens.subastas);
-    await press("Próximamente");
-    assert.deepEqual(state.queryOptions.queryKey, ["subastas", "programada"]);
+    lacks("Próximamente");
+    assert.deepEqual(state.queryOptions.queryKey, ["subastas", "activa"]);
   });
   await test("Subastas: denegar GPS conserva pantalla", async () => {
     await mount(screens.subastas);
@@ -556,10 +608,9 @@ async function run() {
     assert.ok(alerts[0][0].includes("Ubicación"));
     has("Cercanas a mí");
   });
-  await test("Subastas: QR usa ruta existente", async () => {
+  await test("Subastas: no muestra el escáner QR", async () => {
     await mount(screens.subastas);
-    await press("Escanear QR");
-    assert.deepEqual(routes[0], ["push", "/escanear"]);
+    lacks("Escanear QR");
   });
   await test("Ofertas: producto ausente no rompe render", async () => {
     state.query.data = [
@@ -737,6 +788,27 @@ async function run() {
     await press("Ofertar");
     assert.equal(state.bids[0][1], 100);
   });
+  await test("Detalle: creador no puede ofertar manualmente ni agitar", async () => {
+    state.session.usuario.rol = "admin";
+    state.realtime.producto.creado_por = uid;
+    await mount(screens.detalle);
+    has("No puedes ofertar en tu propia subasta.");
+    assert.equal(button("Ofertar").props.disabled, true);
+    assert.equal(state.shake.enabled, false);
+    await press("Ofertar");
+    await act(async () => state.shake.cb());
+    await act(async () => state.tilt.cb());
+    assert.equal(state.bids.length, 0);
+    lacks("Oferta rápida");
+  });
+  await test("Detalle: administrador puede ofertar en subastas de otro creador", async () => {
+    state.session.usuario.rol = "admin";
+    state.realtime.producto.creado_por = "otro";
+    await mount(screens.detalle);
+    assert.equal(button("Ofertar").props.disabled, false);
+    await press("Ofertar");
+    assert.equal(state.bids.length, 1);
+  });
   await test("Detalle: reserva del líder cuenta para subir oferta", async () => {
     state.session.usuario.creditos = 10;
     await mount(screens.detalle);
@@ -794,8 +866,8 @@ async function run() {
   });
   for (const [session, role, allowed] of [
     [false, "usuario", ["index", "(auth)"]],
-    [true, "usuario", ["index", "(tabs)", "subasta/[id]", "escanear"]],
-    [true, "admin", ["index", "(tabs)", "subasta/[id]", "escanear", "(admin)"]],
+    [true, "usuario", ["index", "(tabs)", "subasta/[id]"]],
+    [true, "admin", ["index", "(tabs)", "subasta/[id]", "(admin)"]],
   ])
     await test(`Rutas: sesión ${session}, rol ${role}`, async () => {
       state.session.usuario.rol = role;

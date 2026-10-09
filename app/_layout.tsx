@@ -62,8 +62,8 @@ function Navegacion() {
         headerTintColor: colores.texto,
         headerTitleStyle: {
           fontFamily: tipografia.editorial,
-          fontWeight: "400",
-          fontSize: 22,
+          fontWeight: "700",
+          fontSize: 20,
         },
         headerShadowVisible: false,
         contentStyle: { backgroundColor: colores.fondo },
@@ -78,10 +78,6 @@ function Navegacion() {
         <Stack.Screen
           name="subasta/[id]"
           options={{ title: "Detalle de subasta", headerBackTitle: "Volver" }}
-        />
-        <Stack.Screen
-          name="escanear"
-          options={{ title: "Escanear QR", presentation: "modal" }}
         />
       </Stack.Protected>
       <Stack.Protected guard={!!session && usuario?.rol === "admin"}>

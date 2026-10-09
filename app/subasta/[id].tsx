@@ -1,19 +1,15 @@
+import { VistaConTeclado } from "../../src/components/VistaConTeclado";
 import { ImagenProducto } from "../../src/components/Editorial";
+import { useCampoVisible } from "../../src/hooks/useCampoVisible";
+import { MAXIMO_CREDITOS } from "../../src/lib/validacion";
+import { Icono } from "../../src/components/Icono";
+
 // UI compartida de Jorge: consume los hooks de Jeshua e Isabel sin modificarlos.
 import { useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, FlatList, Modal, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Boton, Estado, Insignia } from "../../src/components/Ui";
 import { ofertar } from "../../src/features/ofertas/ofertar";
@@ -61,6 +57,8 @@ export default function DetalleSubasta() {
   );
 }
 function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
+  const campos = useCampoVisible();
+
   const { usuario } = usePerfilActual();
   const [focused, setFocused] = useState(false);
   useFocusEffect(
@@ -95,6 +93,7 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
   const [error, setError] = useState("");
   const ocupado = useRef(false);
   const activa = !!producto && producto.estado === "activa" && restante > 0;
+  const propia = !!usuario && producto?.creado_por === usuario.id;
   const minimo = producto
     ? producto.lider_id
       ? producto.precio_actual + producto.incremento_minimo
@@ -107,15 +106,23 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
         : 0) >=
     valor;
   useEffect(() => {
-    if (!activa || !focused) setRapida(null);
-  }, [activa, focused]);
+    if (!activa || !focused || propia) setRapida(null);
+  }, [activa, focused, propia]);
   const enviar = async (valor: number, metodo: "normal" | "rapida_agitar") => {
     if (ocupado.current) return;
+    if (propia) {
+      setRapida(null);
+      return setError("No puedes ofertar en tu propia subasta.");
+    }
     if (!activa) {
       setRapida(null);
       return setError("La subasta no está aceptando ofertas.");
     }
-    if (!Number.isSafeInteger(valor) || valor < minimo) {
+    if (
+      !Number.isSafeInteger(valor) ||
+      valor > MAXIMO_CREDITOS ||
+      valor < minimo
+    ) {
       setRapida(null);
       return setError(
         `Escribe un monto entero de al menos ${numero(minimo)} créditos.`,
@@ -155,6 +162,7 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
     () => {
       if (
         !activa ||
+        propia ||
         ocupado.current ||
         rapida !== null ||
         !disponibleOferta(minimo)
@@ -165,10 +173,10 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
       );
       setRapida(minimo);
     },
-    activa && focused && !enviando,
+    activa && !propia && focused && !enviando,
   );
   const progreso = useConfirmarInclinacion(
-    rapida !== null && activa && focused && !enviando,
+    rapida !== null && activa && !propia && focused && !enviando,
     () => {
       if (rapida !== null) void enviar(rapida, "rapida_agitar");
     },
@@ -216,56 +224,65 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
       edges={["bottom"]}
       style={{ flex: 1, backgroundColor: colores.fondo }}
     >
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <VistaConTeclado>
         <FlatList
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+          ref={(vista) => {
+            campos.ref.current = vista;
+          }}
+          onScroll={campos.onScroll}
+          scrollEventThrottle={16}
+          onLayout={campos.revelarCampo}
           data={ofertas}
           keyExtractor={(o) => o.id}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[ui.contenido, { padding: 20 }]}
+          contentContainerStyle={[ui.contenido, { padding: 16 }]}
           ListHeaderComponent={
             <View style={{ gap: 16, paddingBottom: 16 }}>
               <ImagenProducto
                 uri={producto.imagen_url}
                 nombre={producto.nombre}
-                alto={250}
+                alto={210}
               />
-              <Insignia texto={estado} />
+              <Insignia texto={estado} tono={activa ? "exito" : "normal"} />
               <Text style={ui.titulo}>{producto.nombre}</Text>
               {!!producto.descripcion && (
                 <Text style={ui.secundario}>{producto.descripcion}</Text>
               )}
-              <View style={ui.hero}>
-                <Text style={ui.heroTexto}>PRECIO ACTUAL · CRÉDITOS</Text>
-                <Text style={ui.heroTitulo}>
-                  {numero(producto.precio_actual)}
+              <View style={[ui.tarjeta, { backgroundColor: colores.suave }]}>
+                <Text style={ui.secundario}>Oferta actual</Text>
+                <Text style={[ui.cifra, { color: colores.primario }]}>
+                  {numero(producto.precio_actual)} créditos
                 </Text>
                 {voyGanando && producto.estado === "activa" && (
-                  <Text style={ui.heroTexto}>Tu oferta está liderando</Text>
+                  <Text style={[ui.texto, { color: colores.exito }]}>
+                    Tu oferta está liderando
+                  </Text>
                 )}
                 <View
                   style={{
                     height: 1,
-                    backgroundColor: "#FFFFFF30",
+                    backgroundColor: colores.borde,
                     marginVertical: 6,
                   }}
                 />
-                <Text style={ui.heroTexto}>
+                <Text style={ui.secundario}>
                   {producto.estado === "programada"
                     ? `Inicia ${fecha(producto.fecha_inicio)}`
                     : `Cierra ${fecha(producto.fecha_fin)}`}
                 </Text>
                 {producto.estado === "activa" && (
                   <Text
-                    style={[ui.heroTitulo, { fontVariant: ["tabular-nums"] }]}
+                    style={[ui.subtitulo, { fontVariant: ["tabular-nums"] }]}
                   >
                     {activa ? formatoTiempo(restante) : "00:00"}
                   </Text>
                 )}
               </View>
-              {activa ? (
+              {activa && propia ? (
+                <Estado titulo="Esta es tu subasta" detalle="No puedes ofertar en tu propia subasta." />
+              ) : activa ? (
                 <View style={ui.tarjeta}>
                   <Text style={ui.subtitulo}>Haz tu oferta</Text>
                   <Text style={ui.secundario}>
@@ -279,6 +296,7 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
                       : ""}
                   </Text>
                   <TextInput
+                    onFocus={campos.revelarCampo}
                     accessibilityLabel="Monto de tu oferta en créditos"
                     style={ui.input}
                     keyboardType="number-pad"
@@ -294,17 +312,6 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
                       {error}
                     </Text>
                   )}
-                  <Boton
-                    titulo={`Ofertar ${monto || numero(minimo)} créditos`}
-                    cargando={enviando}
-                    disabled={!usuario}
-                    onPress={() => {
-                      void enviar(
-                        monto.trim() ? Number(monto) : minimo,
-                        "normal",
-                      );
-                    }}
-                  />
                   <Text style={ui.secundario}>
                     Oferta rápida: agita para proponer el mínimo e inclina el
                     teléfono para confirmar.
@@ -358,6 +365,33 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
             </View>
           )}
         />
+        {activa && (
+          <View
+            style={{
+              padding: 16,
+              paddingTop: 12,
+              borderTopWidth: 1,
+              borderTopColor: colores.borde,
+              backgroundColor: colores.blanco,
+            }}
+          >
+            <Boton
+              titulo={`Ofertar ${monto || numero(minimo)} créditos`}
+              cargando={enviando}
+              disabled={!usuario || propia}
+              onPress={() => {
+                void enviar(
+                  monto.trim()
+                    ? /^\d+$/.test(monto.trim())
+                      ? Number(monto)
+                      : NaN
+                    : minimo,
+                  "normal",
+                );
+              }}
+            />
+          </View>
+        )}
         <Modal
           visible={rapida !== null}
           transparent
@@ -369,14 +403,19 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
           <View
             style={{
               flex: 1,
-              backgroundColor: "#10203CCC",
+              backgroundColor: "#142B49CC",
               justifyContent: "center",
               padding: 24,
             }}
           >
             <View style={ui.tarjeta}>
+              <View style={{ alignItems: "center" }}>
+                <Icono nombre="subastas" size={36} />
+              </View>
               <Insignia texto="Oferta rápida" />
-              <Text style={ui.titulo}>{numero(rapida ?? 0)} créditos</Text>
+              <Text style={[ui.cifra, { color: colores.primario }]}>
+                {numero(rapida ?? 0)} créditos
+              </Text>
               <Text style={ui.texto}>
                 Inclina el teléfono hacia el frente para confirmar esta oferta.
               </Text>
@@ -415,7 +454,7 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
             </View>
           </View>
         </Modal>
-      </KeyboardAvoidingView>
+      </VistaConTeclado>
     </SafeAreaView>
   );
 }

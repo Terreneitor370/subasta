@@ -1,29 +1,50 @@
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { colores, numero, tipografia, ui } from "../lib/ui";
+import { Icono, type NombreIcono } from "./Icono";
 export function Boton({
   titulo,
   onPress,
   cargando = false,
   disabled = false,
   secundario = false,
+  icono,
+  peligro = false,
+  accessibilityLabel,
 }: {
   titulo: string;
   onPress: () => void;
   cargando?: boolean;
   disabled?: boolean;
   secundario?: boolean;
+  icono?: NombreIcono;
+  peligro?: boolean;
+  accessibilityLabel?: string;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? titulo}
       accessibilityState={{ disabled: disabled || cargando, busy: cargando }}
       disabled={disabled || cargando}
       onPress={onPress}
       style={({ pressed }) => [
         secundario ? ui.botonSecundario : ui.boton,
+        { flexDirection: "row", gap: 8 },
+        peligro && {
+          borderWidth: 1,
+          borderColor: colores.alerta,
+          backgroundColor: colores.blanco,
+        },
         (disabled || cargando || pressed) && ui.deshabilitado,
       ]}
     >
+      {icono && !cargando && (
+        <Icono
+          nombre={icono}
+          color={secundario ? colores.primario : colores.blanco}
+          size={20}
+        />
+      )}
       {cargando ? (
         <ActivityIndicator
           color={secundario ? colores.primario : colores.blanco}
@@ -31,7 +52,11 @@ export function Boton({
         />
       ) : (
         <Text
-          style={[ui.botonTexto, secundario && { color: colores.primario }]}
+          style={[
+            ui.botonTexto,
+            secundario && { color: colores.primario },
+            peligro && { color: colores.alerta },
+          ]}
         >
           {titulo}
         </Text>
@@ -115,7 +140,7 @@ export function Saldo({
 }) {
   return (
     <View style={ui.hero}>
-      <Text style={ui.heroTexto}>TU SALDO · CRÉDITOS</Text>
+      <Text style={ui.heroTexto}>Saldo disponible</Text>
       <Text style={ui.heroTitulo}>
         {disponibles == null ? "—" : numero(disponibles)}
       </Text>
