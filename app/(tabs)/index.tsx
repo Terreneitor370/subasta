@@ -4,23 +4,9 @@ import { useActualizarPantalla } from "../../src/components/useActualizarPantall
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";
-import {
-  Alert,
-  FlatList,
-  Linking,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Boton, Estado, Insignia } from "../../src/components/Ui";
-import {
-  distanciaKm,
-  obtenerUbicacion,
-  ubicacionDenegadaPermanente,
-  type Coordenadas,
-} from "../../src/hooks/useUbicacion";
+import { Estado, Insignia } from "../../src/components/Ui";
 import { usePerfilActual } from "../../src/components/usePerfilActual";
 import { supabase } from "../../src/lib/supabase";
 import {
@@ -34,8 +20,6 @@ import {
 export default function Subastas() {
   const campos = useCampoVisible();
   const { usuario } = usePerfilActual();
-  const [ubicacion, setUbicacion] = useState<Coordenadas | null>(null);
-  const [localizando, setLocalizando] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const consulta = useQuery({
     queryKey: ["subastas", "activa"],
@@ -50,49 +34,9 @@ export default function Subastas() {
     },
   });
   useActualizarPantalla(consulta.refetch);
-  const lista = (consulta.data ?? [])
-    .filter((p) =>
-      p.nombre
-        .toLocaleLowerCase()
-        .includes(busqueda.trim().toLocaleLowerCase()),
-    )
-    .map((p) => ({
-      ...p,
-      km:
-        ubicacion && p.latitud != null && p.longitud != null
-          ? distanciaKm(ubicacion, { latitud: p.latitud, longitud: p.longitud })
-          : null,
-    }));
-  if (ubicacion) lista.sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity));
-  const cercanas = async () => {
-    if (ubicacion) return setUbicacion(null);
-    setLocalizando(true);
-    try {
-      const posicion = await obtenerUbicacion();
-      if (posicion) setUbicacion(posicion);
-      else if (await ubicacionDenegadaPermanente())
-        Alert.alert(
-          "Permiso de ubicación desactivado",
-          "Para ver subastas cercanas, activa el permiso de ubicación en los ajustes del sistema.",
-          [
-            { text: "Cancelar", style: "cancel" },
-            { text: "Abrir ajustes", onPress: () => Linking.openSettings() },
-          ],
-        );
-      else
-        Alert.alert(
-          "Ubicación no disponible",
-          "Activa el permiso de ubicación para ordenar por distancia. Puedes seguir viendo todas las subastas.",
-        );
-    } catch {
-      Alert.alert(
-        "No pudimos obtener tu ubicación",
-        "Inténtalo de nuevo o explora todas las subastas.",
-      );
-    } finally {
-      setLocalizando(false);
-    }
-  };
+  const lista = (consulta.data ?? []).filter((p) =>
+    p.nombre.toLocaleLowerCase().includes(busqueda.trim().toLocaleLowerCase()),
+  );
   return (
     <SafeAreaView edges={["top", "bottom"]} style={ui.pantalla}>
       <FlatList
@@ -129,22 +73,8 @@ export default function Subastas() {
               clearButtonMode="while-editing"
               maxLength={120}
             />
-            <View style={ui.fila}>
-              <View style={{ flex: 1 }}>
-                <Boton
-                  titulo={ubicacion ? "Ver todas" : "Cercanas a mí"}
-                  icono="ofertas"
-                  secundario
-                  cargando={localizando}
-                  onPress={cercanas}
-                />
-              </View>
-            </View>
             <Text style={ui.secundario}>
-              {ubicacion
-                ? "Ordenadas por cercanía · sin ubicación al final"
-                : "Ordenadas por fecha de cierre"}{" "}
-              · {lista.length} resultados
+              Ordenadas por fecha de cierre · {lista.length} resultados
             </Text>
           </View>
         }
@@ -198,7 +128,6 @@ export default function Subastas() {
               {item.estado === "programada"
                 ? `Inicia ${fecha(item.fecha_inicio)}`
                 : `Cierra ${fecha(item.fecha_fin)}`}
-              {item.km != null ? ` · ${item.km.toFixed(1)} km` : ""}
             </Text>
             <Text style={ui.enlace}>Ver subasta →</Text>
           </Pressable>

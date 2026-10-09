@@ -166,6 +166,14 @@ const mocks = {
       async () => {},
     ],
   },
+  "expo-local-authentication": {
+    hasHardwareAsync: async () => state.huella?.hardware ?? true,
+    isEnrolledAsync: async () => state.huella?.enrolada ?? true,
+    authenticateAsync: async () => state.huella?.resultado ?? { success: true },
+  },
+  "expo-image-picker": {
+    launchImageLibraryAsync: async () => state.galeria ?? { canceled: true },
+  },
   "expo-status-bar": { StatusBar: "StatusBar" },
   "expo-haptics": {
     notificationAsync: async () => {},
@@ -216,12 +224,6 @@ Module._load = function (request, parent, isMain) {
         state.tilt = { enabled, cb };
         return 0;
       },
-    };
-  if (/useUbicacion$/.test(request))
-    return {
-      obtenerUbicacion: async () => state.location,
-      ubicacionDenegadaPermanente: async () => false,
-      distanciaKm: (a, b) => Math.abs(a.latitud - b.latitud),
     };
   if (/ofertas\/ofertar$/.test(request))
     return {
@@ -388,6 +390,53 @@ async function run() {
     assert.equal(button("Publicar subasta").props.disabled, false);
     assert.equal(scroll.props.contentContainerStyle.flex, undefined);
     assert.equal(tree.root.findByType("SafeAreaView").props.edges[0], "bottom");
+  });
+  await test("Nueva subasta: huella no configurada bloquea adjuntar foto", async () => {
+    state.huella = { hardware: false };
+    await mount(NuevaSubasta);
+    await press("Adjuntar foto del producto");
+    assert.ok(alerts[0][0].includes("Huella"));
+    has("Adjuntar foto del producto");
+  });
+  await test("Nueva subasta: huella rechazada no ofrece elegir la foto", async () => {
+    state.huella = { resultado: { success: false } };
+    await mount(NuevaSubasta);
+    await press("Adjuntar foto del producto");
+    assert.equal(alerts.length, 0);
+    has("Adjuntar foto del producto");
+  });
+  await test("Nueva subasta: huella confirmada ofrece tomar foto o elegir de galería", async () => {
+    await mount(NuevaSubasta);
+    await press("Adjuntar foto del producto");
+    const opciones = alerts[0][2].map((o) => o.text);
+    assert.deepEqual(opciones, ["Tomar foto", "Elegir de galería", "Cancelar"]);
+  });
+  await test("Nueva subasta: elegir tomar foto abre el flujo de cámara", async () => {
+    await mount(NuevaSubasta);
+    await press("Adjuntar foto del producto");
+    await act(async () =>
+      alerts[0][2].find((o) => o.text === "Tomar foto").onPress(),
+    );
+    has("Necesitamos permiso de cámara para tomar la foto.");
+  });
+  await test("Nueva subasta: elegir de galería adjunta la foto seleccionada", async () => {
+    state.galeria = { canceled: false, assets: [{ uri: "file://foto.jpg" }] };
+    await mount(NuevaSubasta);
+    await press("Adjuntar foto del producto");
+    await act(async () =>
+      alerts[0][2].find((o) => o.text === "Elegir de galería").onPress(),
+    );
+    lacks("Adjuntar foto del producto");
+    assert.equal(tree.root.findAllByType("Image").length, 1);
+  });
+  await test("Nueva subasta: cancelar la galería conserva la pantalla", async () => {
+    state.galeria = { canceled: true };
+    await mount(NuevaSubasta);
+    await press("Adjuntar foto del producto");
+    await act(async () =>
+      alerts[0][2].find((o) => o.text === "Elegir de galería").onPress(),
+    );
+    has("Adjuntar foto del producto");
   });
   await test("Créditos: todos los paquetes aplican un peso por crédito", async () => {
     const PAQUETES = component(
@@ -601,12 +650,6 @@ async function run() {
     await mount(screens.subastas);
     lacks("Próximamente");
     assert.deepEqual(state.queryOptions.queryKey, ["subastas", "activa"]);
-  });
-  await test("Subastas: denegar GPS conserva pantalla", async () => {
-    await mount(screens.subastas);
-    await press("Cercanas a mí");
-    assert.ok(alerts[0][0].includes("Ubicación"));
-    has("Cercanas a mí");
   });
   await test("Subastas: no muestra el escáner QR", async () => {
     await mount(screens.subastas);
