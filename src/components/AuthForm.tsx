@@ -9,6 +9,7 @@ import { Boton } from "./Ui";
 import { Marca } from "./Editorial";
 import { useCampoVisible } from "../hooks/useCampoVisible";
 import { Icono } from "./Icono";
+import { Image } from "expo-image";
 export function AuthForm({ registro = false }: { registro?: boolean }) {
   const campos = useCampoVisible();
   const [nombre, setNombre] = useState("");
@@ -94,7 +95,7 @@ export function AuthForm({ registro = false }: { registro?: boolean }) {
     }
   };
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colores.fondo }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colores.oscuro }}>
       <VistaConTeclado>
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -110,9 +111,8 @@ export function AuthForm({ registro = false }: { registro?: boolean }) {
           keyboardDismissMode="on-drag"
           contentContainerStyle={{
             flexGrow: 1,
-            justifyContent: "center",
-            padding: 24,
-            gap: 24,
+            padding: 0,
+            gap: 0,
           }}
         >
           <View
@@ -120,11 +120,37 @@ export function AuthForm({ registro = false }: { registro?: boolean }) {
               width: "100%",
               maxWidth: 480,
               alignSelf: "center",
-              gap: 24,
+              gap: 0,
             }}
           >
-            <Marca />
-            <View style={{ gap: 16 }}>
+            <View
+              style={[
+                ui.cabecera,
+                {
+                  borderBottomLeftRadius: 0,
+                  borderBottomRightRadius: 0,
+                  gap: 12,
+                },
+              ]}
+            >
+              <View pointerEvents="none" style={ui.acentoCabecera} />
+              <Marca clara />
+              {!registro && <Text style={ui.heroTitulo}>Entra a la <Text style={{ color: colores.acento }}>subasta</Text></Text>}
+              <Text style={ui.heroTexto}>
+                {registro
+                  ? "Únete y empieza a participar."
+                  : "Entra y participa en tiempo real."}
+              </Text>
+            </View>
+            <Image
+              source={require("../../assets/images/portada-subasta-v2.png")}
+              contentFit="cover"
+              style={{ width: "100%", height: registro ? 130 : 210 }}
+              accessible={false}
+            />
+            <View
+              style={[ui.tarjeta, { gap: 16, padding: 24, marginTop: -18, borderRadius: 24, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderWidth: 0 }]}
+            >
               <Text style={ui.titulo}>
                 {registro ? "Crear cuenta" : "Iniciar sesión"}
               </Text>

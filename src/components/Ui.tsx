@@ -101,24 +101,26 @@ export function Insignia({
   tono?: "normal" | "exito" | "alerta";
 }) {
   const color =
-    tono === "exito"
-      ? colores.exito
-      : tono === "alerta"
-        ? colores.alerta
-        : colores.primario;
+    texto === "En vivo"
+      ? colores.acento
+      : tono === "exito"
+        ? colores.exito
+        : tono === "alerta"
+          ? colores.alerta
+          : colores.primario;
   return (
     <View
       style={{
         alignSelf: "flex-start",
-        borderRadius: 4,
+        borderRadius: 8,
         paddingHorizontal: 10,
         paddingVertical: 5,
-        backgroundColor: `${color}12`,
+        backgroundColor: texto === "En vivo" ? colores.acento : `${color}15`,
       }}
     >
       <Text
         style={{
-          color,
+          color: texto === "En vivo" ? colores.blanco : color,
           fontFamily: tipografia.interfaz,
           fontSize: 11,
           fontWeight: "600",
@@ -139,20 +141,30 @@ export function Saldo({
   reservados?: number;
 }) {
   return (
-    <View style={ui.hero}>
-      <Text style={ui.heroTexto}>Saldo disponible</Text>
-      <Text style={ui.heroTitulo}>
-        {disponibles == null ? "—" : numero(disponibles)}
-      </Text>
-      <Text style={ui.heroTexto}>Disponibles para participar</Text>
-      <View
-        style={{ height: 1, backgroundColor: "#FFFFFF25", marginVertical: 4 }}
-      />
-      <Text style={ui.heroTexto}>
-        {reservados == null
-          ? "Cargando saldo…"
-          : `${numero(reservados)} reservados en tus ofertas`}
-      </Text>
+    <View style={[ui.hero, { backgroundColor: colores.primario, padding: 16, gap: 12 }]}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 20 }}>
+        <View style={{ flex: 1, minWidth: 100 }}>
+          <Text style={ui.heroTexto}>Disponibles</Text>
+          <Text style={[ui.heroTitulo, { fontSize: 46, lineHeight: 56 }]}>
+            {disponibles == null ? "—" : numero(disponibles)}
+          </Text>
+        </View>
+        <View
+          style={{
+            flex: 1,
+            minWidth: 100,
+            borderLeftWidth: 1,
+            borderLeftColor: "#FFFFFF50",
+            paddingLeft: 16,
+          }}
+        >
+          <Text style={ui.heroTexto}>{reservados == null ? "Cargando saldo…" : "Reservados"}</Text>
+          <Text style={[ui.heroTitulo, { fontSize: 46, lineHeight: 56 }]}>
+            {reservados == null ? "—" : numero(reservados)}
+          </Text>
+        </View>
+      </View>
+      <Text style={[ui.heroTexto, { textAlign: "center", borderTopWidth: 1, borderTopColor: "#FFFFFF50", paddingTop: 8 }]}>$1 MXN = 1 crédito. Por cada peso obtienes un crédito.</Text>
     </View>
   );
 }

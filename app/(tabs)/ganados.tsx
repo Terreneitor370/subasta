@@ -7,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Estado, Insignia } from "../../src/components/Ui";
 import { usePerfilActual } from "../../src/components/usePerfilActual";
 import { supabase } from "../../src/lib/supabase";
-import { fecha, mensajeError, numero, ui } from "../../src/lib/ui";
+import { colores, fecha, mensajeError, numero, ui } from "../../src/lib/ui";
 export default function Ganados() {
   const { session } = usePerfilActual();
   const uid = session?.user.id;
@@ -36,13 +36,13 @@ export default function Ganados() {
   });
   useActualizarPantalla(consulta.refetch, !!uid);
   return (
-    <SafeAreaView edges={["top", "bottom"]} style={ui.pantalla}>
+    <SafeAreaView edges={["top", "bottom"]} style={[ui.pantalla, { padding: 0 }]}>
       <FlatList
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
         data={consulta.isError ? [] : (consulta.data ?? [])}
         keyExtractor={(g) => g.id}
-        contentContainerStyle={ui.contenido}
+        contentContainerStyle={[ui.contenido, { padding: 16, paddingBottom: 32 }]}
         onRefresh={() => {
           void consulta.refetch();
         }}
@@ -78,26 +78,28 @@ export default function Ganados() {
           )
         }
         renderItem={({ item }) => (
-          <Pressable
-            accessibilityRole="button"
-            style={ui.tarjeta}
-            onPress={() => router.push(`/subasta/${item.producto_id}`)}
-          >
+          <View style={ui.tarjeta}>
             <ImagenProducto
               uri={item.producto?.imagen_url}
               nombre={item.producto?.nombre ?? "Producto"}
               alto={170}
             />
-            <Insignia texto="Subasta ganada" tono="exito" />
-            <Text style={ui.subtitulo}>
-              {item.producto?.nombre ?? "Producto no disponible"}
-            </Text>
-            <Text style={ui.cifra}>
-              {numero(item.monto)} <Text style={ui.secundario}>créditos</Text>
-            </Text>
-            <Text style={ui.secundario}>Ganada el {fecha(item.fecha)}</Text>
-            <Text style={ui.enlace}>Ver subasta →</Text>
-          </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              style={{ gap: 6 }}
+              onPress={() => router.push(`/subasta/${item.producto_id}`)}
+            >
+              <Insignia texto="Subasta ganada" tono="exito" />
+              <Text style={ui.subtitulo}>
+                {item.producto?.nombre ?? "Producto no disponible"}
+              </Text>
+              <Text style={[ui.cifra, { color: colores.oscuro, fontSize: 24, lineHeight: 32 }]}>
+                {numero(item.monto)} <Text style={ui.secundario}>créditos</Text>
+              </Text>
+              <Text style={ui.secundario}>Ganada el {fecha(item.fecha)}</Text>
+              <Text style={ui.enlace}>Ver subasta →</Text>
+            </Pressable>
+          </View>
         )}
       />
     </SafeAreaView>

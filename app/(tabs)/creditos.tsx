@@ -62,12 +62,12 @@ export default function Creditos() {
     }
   };
   return (
-    <SafeAreaView edges={["top", "bottom"]} style={ui.pantalla}>
+    <SafeAreaView edges={["top", "bottom"]} style={[ui.pantalla, { padding: 0 }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
         style={{ flex: 1 }}
-        contentContainerStyle={ui.contenido}
+        contentContainerStyle={[ui.contenido, { padding: 16, paddingBottom: 32 }]}
         refreshControl={
           <RefreshControl
             refreshing={consulta.isRefetching}
@@ -77,24 +77,11 @@ export default function Creditos() {
           />
         }
       >
-        <Encabezado ceja="TU CUENTA" titulo="Créditos" />
+        <Encabezado ceja="TU CUENTA" titulo="Mis créditos" />
         <Saldo
           disponibles={usuario?.creditos}
           reservados={usuario?.creditos_reservados}
         />
-        <Text
-          style={[
-            ui.texto,
-            {
-              backgroundColor: colores.suave,
-              padding: 12,
-              borderRadius: 8,
-              color: colores.primario,
-            },
-          ]}
-        >
-          $1 MXN = 1 crédito. Por cada peso obtienes un crédito.
-        </Text>
         <Text style={ui.subtitulo}>Comprar créditos</Text>
         <Text style={ui.secundario}>
           Los créditos reservados se liberan si alguien supera tu oferta o la
@@ -115,12 +102,10 @@ export default function Creditos() {
             ]}
           >
             <View style={{ flex: 1, minWidth: 130, gap: 4 }}>
-              <Text style={ui.subtitulo}>
+              <Text style={[ui.cifra, { fontSize: 24, lineHeight: 32, color: colores.oscuro }]}>
                 {numero(p.creditos)} <Text style={ui.secundario}>créditos</Text>
               </Text>
-              <Text style={ui.texto}>
-                ${numero(p.precio)} MXN
-              </Text>
+              <Text style={ui.texto}>${numero(p.precio)} MXN</Text>
             </View>
             <Boton
               titulo="Comprar"
@@ -152,10 +137,15 @@ export default function Creditos() {
           />
         ) : (
           consulta.data.map((t) => (
-            <View key={t.id} style={ui.tarjeta}>
+            <View key={t.id} style={[ui.tarjeta, { flexDirection: "row", alignItems: "center", gap: 12 }]}>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.cantidad >= 0 ? colores.exito : colores.alerta, alignItems: "center", justifyContent: "center" }}>
+                <Text style={[ui.subtitulo, { color: colores.blanco }]}>{t.cantidad >= 0 ? "+" : "−"}</Text>
+              </View>
+              <View style={{ flex: 1, gap: 4 }}>
               <Text style={ui.etiqueta}>{tipos[t.tipo]}</Text>
               <Text style={ui.subtitulo}>{numero(t.cantidad)} créditos</Text>
               <Text style={ui.secundario}>{fecha(t.fecha)}</Text>
+              </View>
             </View>
           ))
         )}

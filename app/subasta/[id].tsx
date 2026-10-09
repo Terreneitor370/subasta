@@ -1,5 +1,5 @@
 import { VistaConTeclado } from "../../src/components/VistaConTeclado";
-import { ImagenProducto } from "../../src/components/Editorial";
+import { ImagenProducto, PanelOferta } from "../../src/components/Editorial";
 import { useCampoVisible } from "../../src/hooks/useCampoVisible";
 import { MAXIMO_CREDITOS } from "../../src/lib/validacion";
 import { Icono } from "../../src/components/Icono";
@@ -243,45 +243,41 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
               <ImagenProducto
                 uri={producto.imagen_url}
                 nombre={producto.nombre}
-                alto={210}
+                alto={260}
               />
               <Insignia texto={estado} tono={activa ? "exito" : "normal"} />
               <Text style={ui.titulo}>{producto.nombre}</Text>
               {!!producto.descripcion && (
                 <Text style={ui.secundario}>{producto.descripcion}</Text>
               )}
-              <View style={[ui.tarjeta, { backgroundColor: colores.suave }]}>
-                <Text style={ui.secundario}>Oferta actual</Text>
-                <Text style={[ui.cifra, { color: colores.primario }]}>
-                  {numero(producto.precio_actual)} créditos
-                </Text>
-                {voyGanando && producto.estado === "activa" && (
-                  <Text style={[ui.texto, { color: colores.exito }]}>
-                    Tu oferta está liderando
-                  </Text>
-                )}
-                <View
-                  style={{
-                    height: 1,
-                    backgroundColor: colores.borde,
-                    marginVertical: 6,
-                  }}
+              <View style={{ gap: 10 }}>
+                <PanelOferta
+                  precio={producto.precio_actual}
+                  cierre={fecha(producto.estado === "programada" ? producto.fecha_inicio : producto.fecha_fin)}
+                  etiqueta={producto.estado === "programada" ? "Inicia" : "Cierra"}
+                  tiempo={producto.estado === "activa" ? (activa ? formatoTiempo(restante) : "00:00") : undefined}
                 />
-                <Text style={ui.secundario}>
-                  {producto.estado === "programada"
-                    ? `Inicia ${fecha(producto.fecha_inicio)}`
-                    : `Cierra ${fecha(producto.fecha_fin)}`}
-                </Text>
-                {producto.estado === "activa" && (
+                {voyGanando && producto.estado === "activa" && (
                   <Text
-                    style={[ui.subtitulo, { fontVariant: ["tabular-nums"] }]}
+                    style={[
+                      ui.texto,
+                      {
+                        color: colores.exito,
+                        backgroundColor: "#E3F7EA",
+                        borderRadius: 8,
+                        padding: 10,
+                      },
+                    ]}
                   >
-                    {activa ? formatoTiempo(restante) : "00:00"}
+                    Tu oferta está liderando
                   </Text>
                 )}
               </View>
               {activa && propia ? (
-                <Estado titulo="Esta es tu subasta" detalle="No puedes ofertar en tu propia subasta." />
+                <Estado
+                  titulo="Esta es tu subasta"
+                  detalle="No puedes ofertar en tu propia subasta."
+                />
               ) : activa ? (
                 <View style={ui.tarjeta}>
                   <Text style={ui.subtitulo}>Haz tu oferta</Text>
@@ -408,12 +404,20 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
               padding: 24,
             }}
           >
-            <View style={ui.tarjeta}>
-              <View style={{ alignItems: "center" }}>
-                <Icono nombre="subastas" size={36} />
+            <View style={[ui.tarjeta, { padding: 24, gap: 16 }]}>
+              <View
+                style={{
+                  alignItems: "center",
+                  padding: 14,
+                  borderRadius: 40,
+                  backgroundColor: colores.acento,
+                  alignSelf: "center",
+                }}
+              >
+                <Icono nombre="subastas" size={36} color={colores.blanco} />
               </View>
               <Insignia texto="Oferta rápida" />
-              <Text style={[ui.cifra, { color: colores.primario }]}>
+              <Text style={[ui.cifra, { color: colores.acentoTexto, textAlign: "center" }]}>
                 {numero(rapida ?? 0)} créditos
               </Text>
               <Text style={ui.texto}>
@@ -440,7 +444,7 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
                   style={{
                     width: `${Math.min(1, Math.max(0, progreso)) * 100}%`,
                     height: 12,
-                    backgroundColor: colores.exito,
+                    backgroundColor: colores.acento,
                   }}
                 />
               </View>

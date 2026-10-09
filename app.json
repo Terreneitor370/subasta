@@ -20,7 +20,10 @@
     },
     "ios": {
       "bundleIdentifier": "mx.utslrc.subasta",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "UIViewControllerBasedStatusBarAppearance": false
+      }
     },
     "plugins": [
       "expo-router",
@@ -33,7 +36,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Se usa tu galería para adjuntar una foto del producto."
+          "photosPermission": "Se usa tu galería para adjuntar una foto del producto.",
+          "microphonePermission": false
         }
       ],
       "expo-notifications",

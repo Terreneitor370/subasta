@@ -14,16 +14,17 @@ export default function TabsLayout() {
           fontWeight: "700",
           fontSize: 20,
         },
-        tabBarActiveTintColor: colores.primario,
-        tabBarInactiveTintColor: colores.gris,
+        tabBarActiveTintColor: "#FFFFFF",
+        tabBarInactiveTintColor: "#DDE7F5",
+        tabBarActiveBackgroundColor: colores.primario,
         tabBarStyle: {
-          backgroundColor: colores.blanco,
+          backgroundColor: colores.oscuro,
           borderTopColor: colores.borde,
         },
         tabBarLabelStyle: {
           fontFamily: tipografia.interfaz,
           fontSize: 11,
-          fontWeight: "500",
+          fontWeight: "600",
         },
       }}
     >

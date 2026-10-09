@@ -48,7 +48,7 @@ export default function MisOfertas() {
   });
   useActualizarPantalla(consulta.refetch, !!uid);
   return (
-    <SafeAreaView edges={["top", "bottom"]} style={ui.pantalla}>
+    <SafeAreaView edges={["top", "bottom"]} style={[ui.pantalla, { padding: 0 }]}>
       <FlatList
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
@@ -64,13 +64,13 @@ export default function MisOfertas() {
               )
         }
         keyExtractor={(o) => o.id}
-        contentContainerStyle={ui.contenido}
+        contentContainerStyle={[ui.contenido, { padding: 16, paddingBottom: 32 }]}
         onRefresh={() => {
           void consulta.refetch();
         }}
         refreshing={consulta.isRefetching}
         ListHeaderComponent={
-          <View style={{ paddingBottom: 16 }}>
+          <View style={{ paddingBottom: 16, gap: 16 }}>
             <Encabezado ceja="TU ACTIVIDAD" titulo="Mis ofertas" />
             <View style={ui.fila}>
               {([false, true] as const).map((activo) => (
@@ -151,39 +151,44 @@ export default function MisOfertas() {
                     ? "Superada"
                     : etiquetasEstado[p.estado];
           return (
-            <Pressable
-              accessibilityRole="button"
-              style={ui.tarjeta}
-              onPress={() => router.push(`/subasta/${item.producto_id}`)}
-            >
+            <View style={ui.tarjeta}>
               <ImagenProducto
                 uri={p?.imagen_url}
                 nombre={p?.nombre ?? "Producto"}
                 alto={160}
               />
-              <Insignia
-                texto={texto}
-                tono={lider && p?.estado !== "cancelada" ? "exito" : "normal"}
-              />
-              <Text style={ui.subtitulo}>
-                {p?.nombre ?? "Subasta no disponible"}
-              </Text>
-              <Text style={ui.cifra}>
-                {numero(item.monto)} <Text style={ui.secundario}>créditos</Text>
-              </Text>
-              <Text style={ui.secundario}>Tu oferta · {fecha(item.fecha)}</Text>
-              {p && (
-                <Text style={ui.texto}>
-                  Precio actual: {numero(p.precio_actual)} créditos
+              <Pressable
+                accessibilityRole="button"
+                style={{ gap: 6 }}
+                onPress={() => router.push(`/subasta/${item.producto_id}`)}
+              >
+                <Insignia
+                  texto={texto}
+                  tono={lider && p?.estado !== "cancelada" ? "exito" : "normal"}
+                />
+                <Text style={ui.subtitulo}>
+                  {p?.nombre ?? "Subasta no disponible"}
                 </Text>
-              )}
-              <Text style={ui.secundario}>
-                {item.metodo === "rapida_agitar"
-                  ? "Oferta rápida al agitar"
-                  : "Oferta manual"}
-              </Text>
-              <Text style={ui.enlace}>Ver detalle →</Text>
-            </Pressable>
+                <Text style={[ui.cifra, { color: colores.oscuro, fontSize: 24, lineHeight: 32 }]}>
+                  {numero(item.monto)}{" "}
+                  <Text style={ui.secundario}>créditos</Text>
+                </Text>
+                <Text style={ui.secundario}>
+                  Tu oferta · {fecha(item.fecha)}
+                </Text>
+                {p && (
+                  <Text style={ui.texto}>
+                    Precio actual: {numero(p.precio_actual)} créditos
+                  </Text>
+                )}
+                <Text style={ui.secundario}>
+                  {item.metodo === "rapida_agitar"
+                    ? "Oferta rápida al agitar"
+                    : "Oferta manual"}
+                </Text>
+                <Text style={ui.enlace}>Ver detalle →</Text>
+              </Pressable>
+            </View>
           );
         }}
       />

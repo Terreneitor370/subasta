@@ -1,4 +1,4 @@
-import { Encabezado, ImagenProducto } from "../../src/components/Editorial";
+import { Encabezado, ImagenProducto, PanelOferta } from "../../src/components/Editorial";
 import { useCampoVisible } from "../../src/hooks/useCampoVisible";
 import { useActualizarPantalla } from "../../src/components/useActualizarPantalla";
 import { useQuery } from "@tanstack/react-query";
@@ -38,7 +38,7 @@ export default function Subastas() {
     p.nombre.toLocaleLowerCase().includes(busqueda.trim().toLocaleLowerCase()),
   );
   return (
-    <SafeAreaView edges={["top", "bottom"]} style={ui.pantalla}>
+    <SafeAreaView edges={["top", "bottom"]} style={[ui.pantalla, { padding: 0 }]}>
       <FlatList
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
@@ -55,24 +55,27 @@ export default function Subastas() {
         }}
         refreshing={consulta.isRefetching}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={ui.contenido}
+        contentContainerStyle={[ui.contenido, { padding: 16, paddingBottom: 32 }]}
         ListHeaderComponent={
-          <View style={{ gap: 16, paddingBottom: 16 }}>
-            <Text style={ui.secundario}>
-              Bienvenido, {usuario?.nombre?.trim().split(" ")[0] || "visitante"}
-            </Text>
-            <Encabezado ceja="EL CATÁLOGO" titulo="Subastas" />
-            <TextInput
-              onFocus={campos.revelarCampo}
-              accessibilityLabel="Buscar subastas por nombre"
-              style={ui.input}
-              placeholder="Buscar un producto…"
-              placeholderTextColor={colores.gris}
-              value={busqueda}
-              onChangeText={setBusqueda}
-              clearButtonMode="while-editing"
-              maxLength={120}
-            />
+          <View style={{ gap: 12, paddingBottom: 0 }}>
+            <Encabezado
+              catalogo
+              ceja="EL CATÁLOGO"
+              titulo="Subastas"
+              detalle={`Bienvenido, ${usuario?.nombre?.trim().split(" ")[0] || "visitante"}`}
+            >
+              <TextInput
+                onFocus={campos.revelarCampo}
+                accessibilityLabel="Buscar subastas por nombre"
+                style={ui.input}
+                placeholder="Buscar un producto…"
+                placeholderTextColor={colores.gris}
+                value={busqueda}
+                onChangeText={setBusqueda}
+                clearButtonMode="while-editing"
+                maxLength={120}
+              />
+            </Encabezado>
             <Text style={ui.secundario}>
               Ordenadas por fecha de cierre · {lista.length} resultados
             </Text>
@@ -104,33 +107,30 @@ export default function Subastas() {
           )
         }
         renderItem={({ item }) => (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Ver ${item.nombre}, ${item.precio_actual} créditos`}
-            style={({ pressed }) => [ui.tarjeta, pressed && ui.deshabilitado]}
-            onPress={() => router.push(`/subasta/${item.id}`)}
-          >
+          <View style={ui.tarjeta}>
+            <View>
             <ImagenProducto
               uri={item.imagen_url}
               nombre={item.nombre}
-              alto={190}
+              alto={180}
             />
-            <Insignia
-              texto={etiquetasEstado[item.estado]}
-              tono={item.estado === "activa" ? "exito" : "normal"}
-            />
-            <Text style={ui.subtitulo}>{item.nombre}</Text>
-            <Text style={ui.cifra}>
-              {numero(item.precio_actual)}{" "}
-              <Text style={ui.secundario}>créditos</Text>
-            </Text>
-            <Text style={ui.secundario}>
-              {item.estado === "programada"
-                ? `Inicia ${fecha(item.fecha_inicio)}`
-                : `Cierra ${fecha(item.fecha_fin)}`}
-            </Text>
-            <Text style={ui.enlace}>Ver subasta →</Text>
-          </Pressable>
+            <View pointerEvents="none" style={{ position: "absolute", left: 10, top: 10 }}><Insignia texto={etiquetasEstado[item.estado]} tono="exito" /></View>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Ver ${item.nombre}, ${item.precio_actual} créditos`}
+              style={({ pressed }) => [
+                { gap: 8 },
+                pressed && ui.deshabilitado,
+              ]}
+              onPress={() => router.push(`/subasta/${item.id}`)}
+            >
+              <Text style={ui.subtitulo}>{item.nombre}</Text>
+              {!!item.descripcion && <Text style={ui.secundario} numberOfLines={1}>{item.descripcion}</Text>}
+              <PanelOferta precio={item.precio_actual} cierre={fecha(item.fecha_fin)} />
+              <Text style={ui.enlace}>Ver subasta →</Text>
+            </Pressable>
+          </View>
         )}
       />
     </SafeAreaView>

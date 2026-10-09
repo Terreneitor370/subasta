@@ -156,9 +156,17 @@ const mocks = {
     Link: "Link",
     Redirect: "Redirect",
     useLocalSearchParams: () => ({ id: state.id }),
+    useSegments: () => state.segments ?? ["(tabs)"],
     useFocusEffect: (cb) => React.useEffect(cb, [cb]),
   },
   "expo-image": { Image: "Image" },
+  "expo-image-manipulator": {
+    SaveFormat: { JPEG: "jpeg" },
+    ImageManipulator: { manipulate: () => ({
+      resize() {}, release() {},
+      renderAsync: async () => ({ release() {}, saveAsync: async () => ({ uri: "file://galeria.jpg" }) }),
+    }) },
+  },
   "expo-camera": {
     CameraView: "CameraView",
     useCameraPermissions: () => [
@@ -258,6 +266,7 @@ for (const ext of [".ts", ".tsx"])
   };
 const component = (file, name = "default") =>
   require(path.join(project, file))[name];
+Module._extensions[".png"] = (module) => { module.exports = 1; };
 const Auth = component("src/components/AuthForm.tsx", "AuthForm");
 const screens = {
   subastas: component("app/(tabs)/index.tsx"),
@@ -385,7 +394,7 @@ async function run() {
   await test("Nueva subasta: publicar permanece fuera del contenido desplazable", async () => {
     await mount(NuevaSubasta);
     const scroll = tree.root.findByType("ScrollView");
-    assert.equal(scroll.findAllByType("TextInput").length, 5);
+    assert.equal(scroll.findAllByType("TextInput").length, 4);
     assert.ok(!text(scroll).includes("Publicar subasta"));
     assert.equal(button("Publicar subasta").props.disabled, false);
     assert.equal(scroll.props.contentContainerStyle.flex, undefined);
@@ -460,6 +469,17 @@ async function run() {
     await mount(ImagenProducto, { nombre: "Audífonos" });
     has("Imagen no disponible");
     assert.equal(tree.root.findAllByType("Image").length, 0);
+  });
+  for (const screen of ["subastas", "ofertas", "ganados"]) await test(`Foto y detalle: controles independientes en ${screen}`, async () => {
+    const conFoto = {...product, imagen_url: "https://example.test/foto.jpg"};
+    state.query.data = screen === "subastas" ? [conFoto] : [{id: "fila", producto_id: pid, monto: 120, fecha: product.fecha_inicio, metodo: "normal", producto: conFoto}];
+    await mount(screens[screen]);
+    for (const control of tree.root.findAllByType("Pressable")) assert.ok(control.findAllByType("Pressable").length <= 1, "No debe haber botones dentro de botones");
+    await act(async () => button("Ampliar foto de Audífonos").props.onPress({stopPropagation() {}}));
+    assert.equal(routes.length, 0);
+    await press("Cerrar foto");
+    await press(screen === "ofertas" ? "Ver detalle" : "Ver subasta");
+    assert.deepEqual(routes[0], ["push", `/subasta/${pid}`]);
   });
   await test("Foto: abre sin navegar, muestra imagen completa y limita el zoom", async () => {
     await mount(ImagenProducto, {nombre: "Audífonos", uri: "https://example.test/foto.png"});
@@ -907,6 +927,29 @@ async function run() {
     assert.equal(state.bids.length, 1);
     await act(async () => resolve());
   });
+  for (const plataforma of ["ios", "android"]) {
+    await test(`Barra de estado: navegación y regreso en ${plataforma}`, async () => {
+      const anterior = RN.Platform.OS;
+      RN.Platform.OS = plataforma;
+      try {
+        state.segments = ["(auth)", "login"];
+        await mount(Root);
+        for (const [segmentos, estilo] of [
+          [["(auth)", "login"], "dark"],
+          [["(tabs)", "index"], "dark"],
+          [["subasta", "[id]"], "light"],
+          [["(admin)", "nueva"], "light"],
+          [["(tabs)", "perfil"], "dark"],
+        ]) {
+          state.segments = segmentos;
+          await act(async () => tree.update(e(Root)));
+          assert.equal(tree.root.findByType("StatusBar").props.style, estilo);
+        }
+      } finally {
+        RN.Platform.OS = anterior;
+      }
+    });
+  }
   for (const [session, role, allowed] of [
     [false, "usuario", ["index", "(auth)"]],
     [true, "usuario", ["index", "(tabs)", "subasta/[id]"]],

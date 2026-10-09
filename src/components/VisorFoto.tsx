@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -36,7 +37,9 @@ export function VisorFoto({
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: colores.oscuro,
-        borderRadius: 8,
+        borderRadius: texto === "Cerrar" ? 8 : 24,
+        borderWidth: 1,
+        borderColor: "#31516F",
         opacity: disabled ? 0.4 : 1,
       }}
     >
@@ -47,6 +50,7 @@ export function VisorFoto({
   );
   return (
     <Modal visible animationType="fade" onRequestClose={cerrar}>
+      <StatusBar style="light" />
       <SafeAreaView style={{ flex: 1, backgroundColor: "#0B1422" }}>
         <View
           style={{

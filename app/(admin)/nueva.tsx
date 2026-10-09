@@ -2,7 +2,7 @@ import { VistaConTeclado } from "../../src/components/VistaConTeclado";
 // Integrante 5 (formulario) + Integrante 4 (CAMARA + HUELLA para adjuntar la foto)
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
+import { elegirFotoGaleria } from "../../src/lib/fotoGaleria";
 import { router } from "expo-router";
 import { useRef, useState } from "react";
 import {
@@ -91,11 +91,8 @@ export default function NuevaSubasta() {
 
   const elegirDeGaleria = async () => {
     try {
-      const resultado = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        quality: 0.6,
-      });
-      if (!resultado.canceled) setFoto(resultado.assets[0].uri);
+      const elegida = await elegirFotoGaleria();
+      if (elegida) setFoto(elegida);
     } catch (e) {
       Alert.alert("No pudimos abrir la galería", mensajeError(e));
     }
@@ -279,6 +276,17 @@ export default function NuevaSubasta() {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
+          <View
+            style={[
+              ui.tarjeta,
+              { marginHorizontal: -16, marginTop: -16, padding: 20, borderRadius: 0, borderWidth: 0, backgroundColor: "#FFE0C7" },
+            ]}
+          >
+            <Text style={[ui.titulo, { color: colores.acentoTexto }]}>Publica tu subasta</Text>
+            <Text style={ui.secundario}>
+              Añade una foto y completa la información de tu producto.
+            </Text>
+          </View>
           <Pressable
             onPress={() => {
               void adjuntarFoto();
@@ -299,6 +307,8 @@ export default function NuevaSubasta() {
             {foto ? (
               <Image
                 source={foto}
+                contentFit="contain"
+                accessibilityLabel="Foto seleccionada del producto"
                 style={{ width: "100%", height: 140, borderRadius: 8 }}
               />
             ) : (
@@ -312,7 +322,7 @@ export default function NuevaSubasta() {
             Toma una foto nueva o elige una de tu galería. Te pediremos tu
             huella para confirmarlo.
           </Text>
-          <Text style={{ fontWeight: "600", marginTop: 6 }}>
+          <Text style={[ui.etiqueta, { marginTop: 6 }]}>
             Nombre del producto
           </Text>
           <TextInput
@@ -324,7 +334,7 @@ export default function NuevaSubasta() {
             editable={!guardando}
             maxLength={120}
             style={ui.input}
-            placeholder="Ej. Audifonos inalambricos"
+            placeholder="Ej. Audífonos inalámbricos"
             placeholderTextColor={colores.gris}
             value={nombre}
             onChangeText={setNombre}
@@ -341,18 +351,20 @@ export default function NuevaSubasta() {
             maxLength={2000}
             onContentSizeChange={campos.revelarCampo}
             style={[ui.input, { maxHeight: 140, textAlignVertical: "top" }]}
-            placeholder="Estado, color, caracteristicas..."
+            placeholder="Estado, color, características…"
             placeholderTextColor={colores.gris}
             value={descripcion}
             onChangeText={setDescripcion}
             multiline
           />
           {errorCampo("descripcion")}
-          <Text style={{ fontWeight: "600", marginTop: 6 }}>
-            Precio inicial (creditos)
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+          <View style={{ flexGrow: 1, flexBasis: 150, gap: 8 }}>
+          <Text style={[ui.etiqueta, { marginTop: 6 }]}>
+            Precio inicial (créditos)
           </Text>
-          <Text style={ui.pista}>
-            Cuanto vale el producto al empezar la subasta. Ej: 100
+          <Text style={[ui.pista, { minHeight: 54 }]}>
+            Cuánto vale el producto al empezar la subasta. Ej.: 100
           </Text>
           <TextInput
             onFocus={campos.revelarCampo}
@@ -370,11 +382,13 @@ export default function NuevaSubasta() {
             onChangeText={setPrecio}
           />
           {errorCampo("precio")}
-          <Text style={{ fontWeight: "600", marginTop: 6 }}>
-            Incremento minimo
+          </View>
+          <View style={{ flexGrow: 1, flexBasis: 150, gap: 8 }}>
+          <Text style={[ui.etiqueta, { marginTop: 6 }]}>
+            Incremento mínimo
           </Text>
-          <Text style={ui.pista}>
-            De cuanto en cuanto debe subir cada oferta (si es 10, se oferta 100,
+          <Text style={[ui.pista, { minHeight: 54 }]}>
+            De cuánto en cuánto debe subir cada oferta (si es 10, se oferta 100,
             110, 120...).
           </Text>
           <TextInput
@@ -393,17 +407,21 @@ export default function NuevaSubasta() {
             onChangeText={setIncremento}
           />
           {errorCampo("incremento")}
-          <Text style={{ fontWeight: "600", marginTop: 6 }}>
-            Duracion (horas y minutos)
+          </View>
+          </View>
+          <Text style={[ui.etiqueta, { marginTop: 6 }]}>
+            Duración (horas y minutos)
           </Text>
           <Text style={ui.pista}>
-            Selecciona cuanto tiempo aceptara ofertas a partir de publicarse.
-            Maximo: 5 dias.
+            Selecciona cuánto tiempo aceptará ofertas a partir de publicarse.
+            Máximo: 5 días.
           </Text>
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+            <View style={{ flexGrow: 1, flexBasis: 156, minWidth: 156 }}>
               <Text style={ui.pista}>Horas</Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Restar una hora"
@@ -434,6 +452,8 @@ export default function NuevaSubasta() {
                     ui.input,
                     {
                       flex: 1,
+                      minWidth: 52,
+                      paddingHorizontal: 8,
                       alignItems: "center",
                       justifyContent: "center",
                     },
@@ -468,9 +488,11 @@ export default function NuevaSubasta() {
                 </Pressable>
               </View>
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flexGrow: 1, flexBasis: 156, minWidth: 156 }}>
               <Text style={ui.pista}>Minutos</Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Restar un minuto"
@@ -501,6 +523,8 @@ export default function NuevaSubasta() {
                     ui.input,
                     {
                       flex: 1,
+                      minWidth: 52,
+                      paddingHorizontal: 8,
                       alignItems: "center",
                       justifyContent: "center",
                     },
@@ -538,7 +562,9 @@ export default function NuevaSubasta() {
               </View>
             </View>
           </View>
-          <Text style={ui.pista}>Duracion total: {minutosTotales} minutos.</Text>
+          <Text style={ui.pista}>
+            Duración total: {minutosTotales} minutos.
+          </Text>
           {errorCampo("minutos")}
         </ScrollView>
         <View
