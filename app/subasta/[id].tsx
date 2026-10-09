@@ -93,6 +93,7 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
   const [error, setError] = useState("");
   const ocupado = useRef(false);
   const activa = !!producto && producto.estado === "activa" && restante > 0;
+  const propia = !!usuario && producto?.creado_por === usuario.id;
   const minimo = producto
     ? producto.lider_id
       ? producto.precio_actual + producto.incremento_minimo
@@ -105,10 +106,14 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
         : 0) >=
     valor;
   useEffect(() => {
-    if (!activa || !focused) setRapida(null);
-  }, [activa, focused]);
+    if (!activa || !focused || propia) setRapida(null);
+  }, [activa, focused, propia]);
   const enviar = async (valor: number, metodo: "normal" | "rapida_agitar") => {
     if (ocupado.current) return;
+    if (propia) {
+      setRapida(null);
+      return setError("No puedes ofertar en tu propia subasta.");
+    }
     if (!activa) {
       setRapida(null);
       return setError("La subasta no está aceptando ofertas.");
@@ -157,6 +162,7 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
     () => {
       if (
         !activa ||
+        propia ||
         ocupado.current ||
         rapida !== null ||
         !disponibleOferta(minimo)
@@ -167,10 +173,10 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
       );
       setRapida(minimo);
     },
-    activa && focused && !enviando,
+    activa && !propia && focused && !enviando,
   );
   const progreso = useConfirmarInclinacion(
-    rapida !== null && activa && focused && !enviando,
+    rapida !== null && activa && !propia && focused && !enviando,
     () => {
       if (rapida !== null) void enviar(rapida, "rapida_agitar");
     },
@@ -274,7 +280,9 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
                   </Text>
                 )}
               </View>
-              {activa ? (
+              {activa && propia ? (
+                <Estado titulo="Esta es tu subasta" detalle="No puedes ofertar en tu propia subasta." />
+              ) : activa ? (
                 <View style={ui.tarjeta}>
                   <Text style={ui.subtitulo}>Haz tu oferta</Text>
                   <Text style={ui.secundario}>
@@ -370,7 +378,7 @@ function Contenido({ id, reintentar }: { id: string; reintentar: () => void }) {
             <Boton
               titulo={`Ofertar ${monto || numero(minimo)} créditos`}
               cargando={enviando}
-              disabled={!usuario}
+              disabled={!usuario || propia}
               onPress={() => {
                 void enviar(
                   monto.trim()

@@ -792,6 +792,27 @@ async function run() {
     await press("Ofertar");
     assert.equal(state.bids[0][1], 100);
   });
+  await test("Detalle: creador no puede ofertar manualmente ni agitar", async () => {
+    state.session.usuario.rol = "admin";
+    state.realtime.producto.creado_por = uid;
+    await mount(screens.detalle);
+    has("No puedes ofertar en tu propia subasta.");
+    assert.equal(button("Ofertar").props.disabled, true);
+    assert.equal(state.shake.enabled, false);
+    await press("Ofertar");
+    await act(async () => state.shake.cb());
+    await act(async () => state.tilt.cb());
+    assert.equal(state.bids.length, 0);
+    lacks("Oferta rápida");
+  });
+  await test("Detalle: administrador puede ofertar en subastas de otro creador", async () => {
+    state.session.usuario.rol = "admin";
+    state.realtime.producto.creado_por = "otro";
+    await mount(screens.detalle);
+    assert.equal(button("Ofertar").props.disabled, false);
+    await press("Ofertar");
+    assert.equal(state.bids.length, 1);
+  });
   await test("Detalle: reserva del líder cuenta para subir oferta", async () => {
     state.session.usuario.creditos = 10;
     await mount(screens.detalle);
