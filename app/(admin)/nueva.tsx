@@ -28,6 +28,10 @@ import {
 import { supabase } from "../../src/lib/supabase";
 import { colores, mensajeError, ui } from "../../src/lib/ui";
 
+const DURACION_MAXIMA_MINUTOS = 5 * 24 * 60;
+const DURACION_MINIMA_MINUTOS = 1;
+const MINUTOS_POR_HORA = 60;
+
 export default function NuevaSubasta() {
   const campos = useCampoVisible();
 
@@ -40,11 +44,14 @@ export default function NuevaSubasta() {
   const [descripcion, setDescripcion] = useState("");
   const [precio, setPrecio] = useState("");
   const [incremento, setIncremento] = useState("10");
-  const [minutos, setMinutos] = useState("60");
+  const [duracionHoras, setDuracionHoras] = useState(1);
+  const [duracionMinutos, setDuracionMinutos] = useState(0);
   const [guardando, setGuardando] = useState(false);
   const ocupado = useRef(false);
   const [tomando, setTomando] = useState(false);
   const capturando = useRef(false);
+  const minutosTotales = duracionHoras * MINUTOS_POR_HORA + duracionMinutos;
+  const minutos = String(minutosTotales);
   const [errores, setErrores] = useState<
     Partial<Record<keyof DatosNuevaSubasta, string>>
   >({});
@@ -57,6 +64,16 @@ export default function NuevaSubasta() {
         {errores[campo]}
       </Text>
     ) : null;
+
+  const ajustarDuracion = (deltaMinutos: number) => {
+    const proximaDuracion = Math.min(
+      DURACION_MAXIMA_MINUTOS,
+      Math.max(DURACION_MINIMA_MINUTOS, minutosTotales + deltaMinutos),
+    );
+
+    setDuracionHoras(Math.floor(proximaDuracion / MINUTOS_POR_HORA));
+    setDuracionMinutos(proximaDuracion % MINUTOS_POR_HORA);
+  };
 
   const abrirCamara = async () => {
     try {
@@ -109,7 +126,6 @@ export default function NuevaSubasta() {
         "Perfil no disponible",
         "Espera a que cargue tu perfil de administrador e inténtalo de nuevo.",
       );
-    const duracionMinutos = Number(minutos);
     ocupado.current = true;
     setGuardando(true);
     try {
@@ -125,7 +141,7 @@ export default function NuevaSubasta() {
         incremento_minimo: Number(incremento),
         fecha_inicio: ahora.toISOString(),
         fecha_fin: new Date(
-          ahora.getTime() + duracionMinutos * 60_000,
+          ahora.getTime() + minutosTotales * 60_000,
         ).toISOString(),
         estado: "activa",
         latitud: ubic?.latitud ?? null,
@@ -339,27 +355,151 @@ export default function NuevaSubasta() {
           />
           {errorCampo("incremento")}
           <Text style={{ fontWeight: "600", marginTop: 6 }}>
-            Duracion (minutos)
+            Duracion (horas y minutos)
           </Text>
           <Text style={ui.pista}>
-            Cuanto tiempo aceptara ofertas a partir de publicarse. Maximo: 5
-            dias (7200 minutos).
+            Selecciona cuanto tiempo aceptara ofertas a partir de publicarse.
+            Maximo: 5 dias.
           </Text>
-          <TextInput
-            onFocus={campos.revelarCampo}
-            accessibilityLabel="Duración en minutos"
-            ref={(entrada) => {
-              entradas.current.minutos = entrada;
-            }}
-            editable={!guardando}
-            maxLength={4}
-            style={ui.input}
-            placeholder="Ej. 60 (max 7200)"
-            placeholderTextColor={colores.gris}
-            keyboardType="number-pad"
-            value={minutos}
-            onChangeText={setMinutos}
-          />
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={ui.pista}>Horas</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Restar una hora"
+                  onPress={() => ajustarDuracion(-MINUTOS_POR_HORA)}
+                  disabled={
+                    guardando || minutosTotales <= DURACION_MINIMA_MINUTOS
+                  }
+                  style={({ pressed }) => [
+                    ui.botonSecundario,
+                    { minHeight: 52, minWidth: 44, paddingHorizontal: 0 },
+                    (pressed ||
+                      guardando ||
+                      minutosTotales <= DURACION_MINIMA_MINUTOS) &&
+                      ui.deshabilitado,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      ui.botonTexto,
+                      { color: colores.primario, fontSize: 20 },
+                    ]}
+                  >
+                    -
+                  </Text>
+                </Pressable>
+                <View
+                  style={[
+                    ui.input,
+                    {
+                      flex: 1,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    },
+                  ]}
+                >
+                  <Text style={ui.texto}>{duracionHoras}</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Sumar una hora"
+                  onPress={() => ajustarDuracion(MINUTOS_POR_HORA)}
+                  disabled={
+                    guardando || minutosTotales >= DURACION_MAXIMA_MINUTOS
+                  }
+                  style={({ pressed }) => [
+                    ui.botonSecundario,
+                    { minHeight: 52, minWidth: 44, paddingHorizontal: 0 },
+                    (pressed ||
+                      guardando ||
+                      minutosTotales >= DURACION_MAXIMA_MINUTOS) &&
+                      ui.deshabilitado,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      ui.botonTexto,
+                      { color: colores.primario, fontSize: 20 },
+                    ]}
+                  >
+                    +
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={ui.pista}>Minutos</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Restar un minuto"
+                  onPress={() => ajustarDuracion(-1)}
+                  disabled={
+                    guardando || minutosTotales <= DURACION_MINIMA_MINUTOS
+                  }
+                  style={({ pressed }) => [
+                    ui.botonSecundario,
+                    { minHeight: 52, minWidth: 44, paddingHorizontal: 0 },
+                    (pressed ||
+                      guardando ||
+                      minutosTotales <= DURACION_MINIMA_MINUTOS) &&
+                      ui.deshabilitado,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      ui.botonTexto,
+                      { color: colores.primario, fontSize: 20 },
+                    ]}
+                  >
+                    -
+                  </Text>
+                </Pressable>
+                <View
+                  style={[
+                    ui.input,
+                    {
+                      flex: 1,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    },
+                  ]}
+                >
+                  <Text style={ui.texto}>
+                    {duracionMinutos.toString().padStart(2, "0")}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Sumar un minuto"
+                  onPress={() => ajustarDuracion(1)}
+                  disabled={
+                    guardando || minutosTotales >= DURACION_MAXIMA_MINUTOS
+                  }
+                  style={({ pressed }) => [
+                    ui.botonSecundario,
+                    { minHeight: 52, minWidth: 44, paddingHorizontal: 0 },
+                    (pressed ||
+                      guardando ||
+                      minutosTotales >= DURACION_MAXIMA_MINUTOS) &&
+                      ui.deshabilitado,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      ui.botonTexto,
+                      { color: colores.primario, fontSize: 20 },
+                    ]}
+                  >
+                    +
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+          <Text style={ui.pista}>Duracion total: {minutosTotales} minutos.</Text>
           {errorCampo("minutos")}
         </ScrollView>
         <View
