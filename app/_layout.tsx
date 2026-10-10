@@ -4,7 +4,7 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { ActivityIndicator, AppState, Platform, View } from "react-native";
@@ -15,6 +15,8 @@ import { usePerfilActual } from "../src/components/usePerfilActual";
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
+  const segmentos = useSegments();
+  const cabeceraOscura = segmentos[0] === "(admin)" || segmentos[0] === "subasta";
   useEffect(() => {
     if (Platform.OS === "web") return;
     const evento = AppState.addEventListener("change", (estado) => {
@@ -29,7 +31,8 @@ export default function RootLayout() {
     >
       <QueryClientProvider client={queryClient}>
         <SesionProvider>
-          <StatusBar style="dark" />
+          {/* Un solo control de la barra: compatible también con Expo Go en iOS. */}
+          <StatusBar style={cabeceraOscura ? "light" : "dark"} />
           <Navegacion />
         </SesionProvider>
       </QueryClientProvider>
@@ -58,8 +61,8 @@ function Navegacion() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: colores.fondo },
-        headerTintColor: colores.texto,
+        headerStyle: { backgroundColor: colores.oscuro },
+        headerTintColor: colores.blanco,
         headerTitleStyle: {
           fontFamily: tipografia.editorial,
           fontWeight: "700",
@@ -77,7 +80,10 @@ function Navegacion() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="subasta/[id]"
-          options={{ title: "Detalle de subasta", headerBackTitle: "Volver" }}
+          options={{
+            title: "Detalle de subasta",
+            headerBackTitle: "Volver",
+          }}
         />
       </Stack.Protected>
       <Stack.Protected guard={!!session && usuario?.rol === "admin"}>

@@ -46,7 +46,7 @@ Ejemplo: `fix(realtime): cerrar canal al salir de la pantalla`.
 | Kassie | iPhone (Expo Go) | 2 - Backend y BD | `supabase/migrations`, `supabase/seed.sql`, `src/types`, `src/features/ofertas` |
 | Jorge | iPhone (Expo Go) | 1 - Frontend | `app/(auth)`, `app/(tabs)`, `src/lib/ui.ts` |
 | Jeshua | iPhone (Expo Go) | 3 - Tiempo real | `src/hooks/useSubastaRealtime.ts`, `useCuentaRegresiva.ts`, `supabase/functions/tick-subastas`, `supabase/cron_tick.sql` |
-| Isabel | Android (development build) | 4 - Sensores | `src/hooks/useAgitar.ts`, `useConfirmarInclinacion.ts`, `useUbicacion.ts`, `app/escanear.tsx`, camara en `app/(admin)/nueva.tsx` |
+| Isabel | Android (development build) | 4 - Sensores | `src/hooks/useAgitar.ts`, `useConfirmarInclinacion.ts`, `useHuella.ts`, camara y huella en `app/(admin)/nueva.tsx` |
 | Brayan | Android (development build) | 5 - Pagos, push y admin | `src/features/creditos`, `src/features/notificaciones`, `app/(admin)`, `supabase/functions/crear-pago`, `stripe-webhook`, `notificar-oferta` |
 | Kassie, Jeshua e Isabel | - | Compartido | `app/subasta/[id].tsx` |
 

@@ -1,4 +1,5 @@
 import { Encabezado } from "../../src/components/Editorial";
+import { Icono } from "../../src/components/Icono";
 import { useActualizarPantalla } from "../../src/components/useActualizarPantalla";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -64,13 +65,13 @@ export default function Perfil() {
     if (n.producto_id) router.push(`/subasta/${n.producto_id}`);
   };
   return (
-    <SafeAreaView edges={["top", "bottom"]} style={ui.pantalla}>
+    <SafeAreaView edges={["top", "bottom"]} style={[ui.pantalla, { padding: 0 }]}>
       <FlatList
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
         data={consulta.isError ? [] : (consulta.data ?? [])}
         keyExtractor={(n) => n.id}
-        contentContainerStyle={ui.contenido}
+        contentContainerStyle={[ui.contenido, { padding: 16, paddingBottom: 32 }]}
         onRefresh={() => {
           void consulta.refetch();
         }}
@@ -78,18 +79,20 @@ export default function Perfil() {
         ListHeaderComponent={
           <View style={{ gap: 16, paddingBottom: 16 }}>
             <Encabezado ceja="ÁREA PERSONAL" titulo="Perfil" />
-            <View style={[ui.fila, { alignItems: "center", gap: 16 }]}>
+            <View
+              style={[ui.tarjeta, ui.fila, { alignItems: "center", gap: 16 }]}
+            >
               <View
                 style={{
                   width: 72,
                   height: 72,
                   borderRadius: 36,
-                  backgroundColor: colores.suave,
+                  backgroundColor: colores.primario,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Text style={ui.titulo}>
+                <Text style={[ui.titulo, { color: colores.blanco }]}>
                   {usuario?.nombre?.trim().charAt(0).toUpperCase() ?? "●"}
                 </Text>
               </View>
@@ -103,16 +106,10 @@ export default function Perfil() {
                 {usuario?.rol === "admin" && <Insignia texto="Administrador" />}
               </View>
             </View>
-            {usuario?.rol === "admin" && (
-              <Boton
-                titulo="Panel de administrador"
-                secundario
-                onPress={() => router.push("/(admin)")}
-              />
-            )}
             <Boton
               titulo="Cerrar sesión"
               secundario
+              peligro
               cargando={saliendo}
               onPress={() =>
                 Alert.alert(
@@ -131,6 +128,15 @@ export default function Perfil() {
                 )
               }
             />
+
+            {usuario?.rol === "admin" && (
+              <Boton
+                titulo="Panel de administrador"
+                secundario
+                onPress={() => router.push("/(admin)")}
+              />
+            )}
+
             <Text style={ui.subtitulo}>Avisos</Text>
             <Text style={ui.secundario}>
               Ofertas superadas, cierres y resultados. Toca un aviso para abrir
@@ -163,17 +169,41 @@ export default function Perfil() {
             accessibilityLabel={`${item.leida ? "" : "Sin leer. "}${item.titulo}`}
             style={[
               ui.tarjeta,
+              { flexDirection: "row", alignItems: "flex-start", gap: 12 },
               !item.leida && { borderColor: colores.primario },
             ]}
             onPress={() => {
               void abrir(item);
             }}
           >
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: item.leida ? "#E3F7EA" : "#FFF0E5",
+              }}
+            >
+              <Icono
+                nombre={
+                  /ganaste|ganador/i.test(item.titulo) ? "ganados" : "ofertas"
+                }
+                color={
+                  /ganaste|ganador/i.test(item.titulo)
+                    ? colores.exito
+                    : colores.acento
+                }
+              />
+            </View>
+            <View style={{ flex: 1, gap: 6 }}>
             {!item.leida && <Insignia texto="Sin leer" />}
             <Text style={ui.subtitulo}>{item.titulo}</Text>
             <Text style={ui.texto}>{item.cuerpo}</Text>
             <Text style={ui.secundario}>{fecha(item.fecha)}</Text>
             {item.producto_id && <Text style={ui.enlace}>Ver subasta →</Text>}
+            </View>
           </Pressable>
         )}
       />

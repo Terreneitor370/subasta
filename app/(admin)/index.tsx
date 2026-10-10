@@ -101,14 +101,13 @@ export default function AdminSubastas() {
           )
         }
         renderItem={({ item }) => (
-          <View style={[ui.tarjeta, { backgroundColor: colores.suave }]}>
+          <View style={ui.tarjeta}>
             <View style={[ui.fila, { alignItems: "flex-start" }]}>
-              <View style={{ width: 84 }}>
+              <View style={{ width: "100%" }}>
                 <ImagenProducto
                   uri={item.imagen_url}
                   nombre={item.nombre}
-                  alto={84}
-                  compacto
+                  alto={180}
                 />
               </View>
               <View style={{ flex: 1, minWidth: 120, gap: 8 }}>

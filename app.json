@@ -14,15 +14,16 @@
     "android": {
       "package": "mx.utslrc.subasta",
       "permissions": [
-        "CAMERA",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "CAMERA"
       ],
       "googleServicesFile": "./google-services.json"
     },
     "ios": {
       "bundleIdentifier": "mx.utslrc.subasta",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "UIViewControllerBasedStatusBarAppearance": false
+      }
     },
     "plugins": [
       "expo-router",
@@ -33,9 +34,10 @@
         }
       ],
       [
-        "expo-location",
+        "expo-image-picker",
         {
-          "locationWhenInUsePermission": "Se usa tu ubicacion para registrar tus ofertas y mostrar subastas cercanas."
+          "photosPermission": "Se usa tu galería para adjuntar una foto del producto.",
+          "microphonePermission": false
         }
       ],
       "expo-notifications",
