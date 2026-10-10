@@ -106,23 +106,6 @@ export default function Perfil() {
                 {usuario?.rol === "admin" && <Insignia texto="Administrador" />}
               </View>
             </View>
-            {usuario?.rol === "admin" && (
-              <Boton
-                titulo="Panel de administrador"
-                secundario
-                onPress={() => router.push("/(admin)")}
-              />
-            )}
-
-            <Text style={ui.subtitulo}>Avisos</Text>
-            <Text style={ui.secundario}>
-              Ofertas superadas, cierres y resultados. Toca un aviso para abrir
-              su subasta.
-            </Text>
-          </View>
-        }
-        ListFooterComponent={
-          <View style={{ paddingTop: 16 }}>
             <Boton
               titulo="Cerrar sesión"
               secundario
@@ -145,6 +128,20 @@ export default function Perfil() {
                 )
               }
             />
+
+            {usuario?.rol === "admin" && (
+              <Boton
+                titulo="Panel de administrador"
+                secundario
+                onPress={() => router.push("/(admin)")}
+              />
+            )}
+
+            <Text style={ui.subtitulo}>Avisos</Text>
+            <Text style={ui.secundario}>
+              Ofertas superadas, cierres y resultados. Toca un aviso para abrir
+              su subasta.
+            </Text>
           </View>
         }
         ListEmptyComponent={

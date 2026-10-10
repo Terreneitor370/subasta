@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { useRef, useState } from "react";
+import { GestureResponderEvent, Modal, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colores, ui } from "../lib/ui";
 
@@ -18,6 +18,33 @@ export function VisorFoto({
   const [zoom, setZoom] = useState(1);
   const [medidas, setMedidas] = useState({ width: 1, height: 1 });
   const [fallo, setFallo] = useState(false);
+  const [posicion, setPosicion] = useState({ x: 0, y: 0 });
+  const gesto = useRef({ dedos: 0, distancia: 0, zoom: 1, x: 0, y: 0, origenX: 0, origenY: 0 });
+  const limitar = (valor: number, maximo: number) => Math.max(-maximo, Math.min(maximo, valor));
+  const cambiarZoom = (valor: number) => {
+    setZoom(Math.max(1, Math.min(4, valor)));
+    setPosicion({ x: 0, y: 0 });
+  };
+  const tocar = (evento: GestureResponderEvent, iniciar = false) => {
+    const dedos = evento.nativeEvent.touches;
+    if (!dedos.length) { gesto.current.dedos = 0; return; }
+    const x = dedos[0].pageX;
+    const y = dedos[0].pageY;
+    const distancia = dedos.length > 1
+      ? Math.hypot(dedos[1].pageX - x, dedos[1].pageY - y) : 0;
+    if (iniciar || gesto.current.dedos !== dedos.length) {
+      gesto.current = { dedos: dedos.length, distancia, zoom, x, y, origenX: posicion.x, origenY: posicion.y };
+      return;
+    }
+    const inicio = gesto.current;
+    if (dedos.length > 1 && inicio.distancia > 0) {
+      const escala = Math.max(1, Math.min(4, inicio.zoom * distancia / inicio.distancia));
+      setZoom(escala);
+      setPosicion({ x: limitar(inicio.origenX, medidas.width * (escala - 1) / 2), y: limitar(inicio.origenY, medidas.height * (escala - 1) / 2) });
+    } else if (dedos.length === 1) {
+      setPosicion({ x: limitar(inicio.origenX + x - inicio.x, medidas.width * (zoom - 1) / 2), y: limitar(inicio.origenY + y - inicio.y, medidas.height * (zoom - 1) / 2) });
+    }
+  };
   const control = (
     texto: string,
     etiqueta: string,
@@ -82,28 +109,30 @@ export function VisorFoto({
               </Text>
             </View>
           ) : (
-            <ScrollView
-              horizontal
-              key={`${zoom}-${medidas.width}-${medidas.height}`}
-              showsHorizontalScrollIndicator={false}
-              style={{ flex: 1 }}
+            <View
+              accessibilityLabel="Imagen con zoom por gesto"
+              onStartShouldSetResponder={() => true}
+              onMoveShouldSetResponder={() => true}
+              onResponderGrant={(evento) => tocar(evento, true)}
+              onResponderMove={(evento) => tocar(evento)}
+              onTouchStart={(evento) => tocar(evento, true)}
+              onTouchEnd={() => { gesto.current.dedos = 0; }}
+              onResponderTerminationRequest={() => false}
+              onResponderTerminate={() => { gesto.current.dedos = 0; }}
+              style={{ flex: 1, overflow: "hidden" }}
             >
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                style={{ width: medidas.width * zoom, height: medidas.height }}
-              >
                 <Image
                   source={uri}
                   accessibilityLabel={`Foto ampliada de ${nombre}`}
                   contentFit="contain"
                   onError={() => setFallo(true)}
                   style={{
-                    width: medidas.width * zoom,
-                    height: medidas.height * zoom,
+                    width: medidas.width,
+                    height: medidas.height,
+                    transform: [{ translateX: posicion.x }, { translateY: posicion.y }, { scale: zoom }],
                   }}
                 />
-              </ScrollView>
-            </ScrollView>
+            </View>
           )}
         </View>
         <View style={{ padding: 12, gap: 8 }}>
@@ -118,26 +147,26 @@ export function VisorFoto({
             {control(
               "−",
               "Reducir foto",
-              () => setZoom((value) => Math.max(1, value - 0.5)),
+              () => cambiarZoom(zoom - 0.5),
               zoom <= 1 || fallo,
             )}
             {control(
               `${Math.round(zoom * 100)} %`,
               "Restablecer tamaño de foto",
-              () => setZoom(1),
+              () => cambiarZoom(1),
               fallo,
             )}
             {control(
               "+",
               "Ampliar foto",
-              () => setZoom((value) => Math.min(4, value + 0.5)),
+              () => cambiarZoom(zoom + 0.5),
               zoom >= 4 || fallo,
             )}
           </View>
           <Text
             style={[ui.secundario, { color: "#CDD7E5", textAlign: "center" }]}
           >
-            Usa + para ampliar y desliza para ver los detalles.
+            Separa dos dedos para ampliar, júntalos para reducir y arrastra para ver los detalles.
           </Text>
         </View>
       </SafeAreaView>

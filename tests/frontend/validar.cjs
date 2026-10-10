@@ -497,6 +497,21 @@ async function run() {
     await act(async () => tree.root.findByType("Modal").props.onRequestClose());
     assert.equal(tree.root.findAllByType("Modal").length, 0);
   });
+  await test("Foto: gesto de dos dedos amplía y limita el zoom", async () => {
+    await mount(ImagenProducto, {nombre: "Audífonos", uri: "https://example.test/foto.png"});
+    await act(async () => button("Ampliar foto de Audífonos").props.onPress({stopPropagation() {}}));
+    const visor = () => tree.root.findAllByType("View").find(n => n.props.accessibilityLabel === "Imagen con zoom por gesto");
+    const evento = (distancia) => ({nativeEvent: {touches: [{pageX: 0, pageY: 0}, {pageX: distancia, pageY: 0}]}});
+    await act(async () => visor().props.onResponderGrant(evento(100)));
+    await act(async () => visor().props.onResponderMove(evento(200)));
+    has("200 %");
+    await act(async () => visor().props.onResponderMove(evento(1000)));
+    has("400 %");
+    await act(async () => visor().props.onResponderMove(evento(10)));
+    has("100 %");
+    await act(async () => visor().props.onTouchEnd());
+    await press("Cerrar foto");
+  });
   await test("Foto: un fallo en pantalla completa permite cerrar y volver a intentar", async () => {
     await mount(ImagenProducto, {nombre: "Audífonos", uri: "https://example.test/foto.png"});
     await act(async () => button("Ampliar foto de Audífonos").props.onPress({stopPropagation() {}}));
