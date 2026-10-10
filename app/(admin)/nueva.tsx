@@ -282,7 +282,6 @@ export default function NuevaSubasta() {
               { marginHorizontal: -16, marginTop: -16, padding: 20, borderRadius: 0, borderWidth: 0, backgroundColor: "#FFE0C7" },
             ]}
           >
-            <Text style={[ui.titulo, { color: colores.acentoTexto }]}>Publica tu subasta</Text>
             <Text style={ui.secundario}>
               Añade una foto y completa la información de tu producto.
             </Text>

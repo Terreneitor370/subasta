@@ -47,15 +47,13 @@ export function Encabezado({
     <View style={{ marginHorizontal: -16, marginTop: -16 }}>
     <View style={[ui.cabecera, { gap: 12, paddingBottom: catalogo ? 18 : 24 }]}>
       <View pointerEvents="none" style={ui.acentoCabecera} />
-      <Marca clara compacta={!catalogo} />
+      <Text accessibilityRole="header" style={[ui.titulo, { color: colores.blanco }]}>{titulo}</Text>
       {!catalogo && <>
-      <Text style={[ui.titulo, { color: colores.blanco }]}>{titulo}</Text>
       {detalle && <Text style={ui.heroTexto}>{detalle}</Text>}
       {children}
       </>}
     </View>
     {catalogo && <View style={{ gap: 12, padding: 16, backgroundColor: colores.fondo }}>
-      <Text style={ui.titulo}>{titulo}</Text>
       {detalle && <Text style={ui.texto}>{detalle}</Text>}
       {children}
     </View>}
